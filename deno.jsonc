@@ -1,1 +1,5 @@
-{}
+{
+  "tasks": {
+    "dev": "deno run --allow-env=DENO_DEPLOYMENT_ID --allow-read=index.html --allow-net=0.0.0.0,bsky.social --watch server.ts"
+  }
+}
