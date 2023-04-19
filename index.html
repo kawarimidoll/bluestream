@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bluestream</title>
+  <meta property="og:url" content="https://bluestream.deno.dev/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Bluestream" />
+  <meta property="og:description" content="RSS feed generator for Bluesky." />
+  <meta property="og:site_name" content="Bluestream" />
+  <meta property="og:image" content="https://cdn.jsdelivr.net/gh/twitter/twemoji@13.1.0/assets/72x72/1f499.png" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css" />
+  <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@13.1.0/assets/72x72/1f499.png" />
+  <style>
+    body {
+      text-align: center;
+    }
+    .center {
+      display: flex;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Bluestream</h1>
+  <div>
+    <p>RSS feed generator for Bluesky.</p>
+    <p>Access to the path /your-handle directory or input handle of bluesky here ↓</p>
+    <form class="center">
+      <input id="input" name="name" required autofocus placeholder="xxx.bsky.social" />
+      <button id="button" type="submit" onclick="go()">Generate feed</button>
+    </form>
+    <p>Currently only posts in bsky.social is supported.</p>
+    <p>
+      <a title="https://github.com/kawarimidoll/bluestream" target="_blank" rel="noopener noreferrer nofollow" href="https://github.com/kawarimidoll/bluestream">https://github.com/kawarimidoll/bluestream</a>
+    </p>
+  </div>
+  <script>
+    function go() {
+      document.getElementById('button').disabled = true;
+      window.location.href = window.location.origin + '/' + document.getElementById('input').value;
+    }
+  </script>
+</body>
+
+</html>

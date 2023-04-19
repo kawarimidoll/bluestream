@@ -22,11 +22,16 @@ async function resolveHandle(handle: string) {
 
 serve(async (request: Request) => {
   const { href, pathname } = new URL(request.url);
-  // console.log(pathname);
+  if (!Deno.env.get("DENO_DEPLOYMENT_ID")) {
+    console.log(pathname);
+  }
 
   if (pathname === "/") {
-    return new Response("access to /your-username", {
-      headers: { "content-type": "text/plain" },
+    const file = await Deno.readFile("./index.html");
+    return new Response(file, {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
     });
   }
   if (pathname === "/favicon.ico") {
