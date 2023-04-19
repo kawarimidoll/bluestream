@@ -1,59 +1,89 @@
 import { serve } from "https://deno.land/std@0.140.0/http/server.ts";
-import { tagNoVoid as tag } from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
+import {
+  sanitize,
+  tagNoVoid as tag,
+} from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
 
-import BskyAgent from "https://esm.sh/@atproto/api";
+import BskyAgent from "https://esm.sh/@atproto/api@0.2.7";
 const service = "https://bsky.social";
 const agent = new BskyAgent({ service });
 
-// console.log({ agent })
+async function resolveHandle(handle: string) {
+  try {
+    const resolve = await agent.api.com.atproto.identity.resolveHandle({
+      handle,
+    });
+    return resolve.data.did;
+  } catch (error) {
+    console.error(error);
+    return "";
+  }
+}
 
 serve(async (request: Request) => {
-  const { pathname } = new URL(request.url);
+  const { href, pathname } = new URL(request.url);
   // console.log(pathname);
 
   if (pathname === "/") {
     return new Response("access to /your-username", {
-    headers: { "content-type": "text/plain" },
+      headers: { "content-type": "text/plain" },
     });
   }
   if (pathname === "/favicon.ico") {
     return new Response("", {
-    headers: { "content-type": "text/plain" },
+      headers: { "content-type": "text/plain" },
     });
   }
 
   const handle = pathname.replace(/^\//, "");
-  const makeURL = (recordDid: string) => {
-    const rkey = recordDid.match(/app\.bsky\.feed\.post\/(\w+)/)?.at(1);
-    return `https://staging.bsky.app/profile/${handle}/post/${rkey}`;
-  };
+  const prof = `https://staging.bsky.app/profile/${handle}`;
 
-  const resolve = await agent.api.com.atproto.identity.resolveHandle({ handle });
-  const repo = resolve.data.did;
+  const repo = await resolveHandle(handle);
+  if (repo === "") {
+    return new Response("Unable to resolve handle", {
+      headers: { "content-type": "text/plain" },
+    });
+  }
 
-  const limit = 5
+  const limit = 5;
   const feeds = await agent.api.app.bsky.feed.post.list({ repo, limit });
-  const body = feeds.records.map((record) =>
-    tag(
-      "item",
-      tag("title", record.value.text),
-      tag("link", makeURL(record.uri)),
-      tag("guid", record.uri),
-      tag("pubDate", record.value.createdAt),
-    )
-  );
+  if (!feeds) {
+    return new Response("Unable to get posts", {
+      headers: { "content-type": "text/plain" },
+    });
+  }
 
-  const prefix = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const prefix = '<?xml version="1.0" encoding="UTF-8"?>';
   const res = tag(
     "rss",
-    { version: "2.0", "xmlns:atom": "http://www.w3.org/2005/Atom" },
+    {
+      version: "2.0",
+      "xmlns:atom": "http://www.w3.org/2005/Atom",
+      "xmlns:dc": "http://purl.org/dc/elements/1.1/",
+    },
     tag(
       "channel",
-      tag("title", `${handle}'s bsky feed`),
-      tag("link", `https://staging.bsky.app/profile/${handle}`),
-      tag("description", `user feed in ${service}`),
+      tag("title", `Bluestream (${handle})`),
+      `<atom:link href="${href}" rel="self" type="application/rss+xml" />`,
+      tag("link", prof),
+      tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.records?.at(0)?.value.createdAt || ""),
-      ...body,
+      ...feeds.records.map((record) =>
+        tag(
+          "item",
+          tag("title", sanitize(record.value.text)),
+          tag("description", sanitize(record.value.text)),
+          tag(
+            "link",
+            `${prof}/post/${
+              record.uri.match(/app\.bsky\.feed\.post\/(\w+)/)?.at(1)
+            }`,
+          ),
+          tag("guid", { isPermaLink: "false" }, record.uri),
+          tag("pubDate", record.value.createdAt),
+          tag("dc:creator", handle),
+        )
+      ),
     ),
   );
   return new Response(prefix + res, {
