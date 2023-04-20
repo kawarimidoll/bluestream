@@ -50,7 +50,7 @@ serve(async (request: Request) => {
     });
   }
 
-  const limit = 5;
+  const limit = 15;
   const feeds = await agent.api.app.bsky.feed.post.list({ repo, limit });
   if (!feeds) {
     return new Response("Unable to get posts", {
