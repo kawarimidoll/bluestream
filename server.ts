@@ -36,7 +36,7 @@ async function resolveHandle(handle: string) {
 }
 
 serve(async (request: Request) => {
-  const { href, pathname } = new URL(request.url);
+  const { href, pathname, searchParams } = new URL(request.url);
   if (isDev) {
     console.log(pathname);
   }
@@ -58,22 +58,31 @@ serve(async (request: Request) => {
   const handle = pathname.replace(/^\//, "");
   const prof = `https://staging.bsky.app/profile/${handle}`;
 
-  const repo = handle.startsWith("did:plc:")
+  const did = handle.startsWith("did:plc:")
     ? handle
     : await resolveHandle(handle);
-  if (repo === "") {
+  if (did === "") {
     return new Response("Unable to resolve handle", {
       headers: { "content-type": "text/plain" },
     });
   }
 
-  const limit = 15;
-  const feeds = await agent.api.app.bsky.feed.post.list({ repo, limit });
-  if (!feeds) {
+  // const limit = 15;
+  const authorFeed = await agent.api.app.bsky.feed.getAuthorFeed({
+    actor: did,
+  });
+  if (!authorFeed?.data?.feed) {
     return new Response("Unable to get posts", {
       headers: { "content-type": "text/plain" },
     });
   }
+  const includeRepost = searchParams.get("repost") === "include";
+  // const includeReply = searchParams.get("reply") === 'include';
+  const feeds = authorFeed.data.feed.filter(({ post }) => {
+    if (!includeRepost && post.author.did !== did) return false;
+    // if (!includeReply && !!post.record.reply) return false;
+    return true;
+  });
 
   const prefix = '<?xml version="1.0" encoding="UTF-8"?>';
   const res = tag(
@@ -89,21 +98,21 @@ serve(async (request: Request) => {
       `<atom:link href="${href}" rel="self" type="application/rss+xml" />`,
       tag("link", prof),
       tag("description", `${handle}'s posts in ${service}`),
-      tag("lastBuildDate", feeds.records?.at(0)?.value.createdAt || ""),
-      ...feeds.records.map((record) =>
+      tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
+      ...feeds.map(({ post }) =>
         tag(
           "item",
-          tag("title", sanitize(record.value.text)),
-          tag("description", sanitize(record.value.text)),
+          tag("title", sanitize(post.record.text)),
+          tag("description", sanitize(post.record.text)),
           tag(
             "link",
             `${prof}/post/${
-              record.uri.match(/app\.bsky\.feed\.post\/(\w+)/)?.at(1)
+              post.uri.match(/app\.bsky\.feed\.post\/(\w+)/)?.at(1)
             }`,
           ),
-          tag("guid", { isPermaLink: "false" }, record.uri),
-          tag("pubDate", record.value.createdAt),
-          tag("dc:creator", handle),
+          tag("guid", { isPermaLink: "false" }, post.uri),
+          tag("pubDate", post.record.createdAt),
+          tag("dc:creator", post.author.handle),
         )
       ),
     ),
