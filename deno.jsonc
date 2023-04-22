@@ -1,5 +1,6 @@
 {
   "tasks": {
+    "ci": "deno lint && deno fmt",
     "dev": "deno run --allow-env=DENO_DEPLOYMENT_ID,BLUESKY_IDENTIFIER,BLUESKY_PASSWORD --allow-read=index.html,.env --allow-net=0.0.0.0,bsky.social --watch server.ts"
   }
 }
