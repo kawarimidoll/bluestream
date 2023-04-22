@@ -25,13 +25,53 @@ const identifier = Deno.env.get("BLUESKY_IDENTIFIER") || "";
 const password = Deno.env.get("BLUESKY_PASSWORD") || "";
 await agent.login({ identifier, password });
 
-async function resolveHandle(handle: string) {
+function getDidFromUri(uri: string) {
+  return uri.replace(/^at:\/\//, "").replace(
+    /\/app\.bsky\.feed.*$/,
+    "",
+  );
+}
+function uriToPostLink(uri: string) {
+  return `https://staging.bsky.app/profile/${
+    uri.replace(/^at:\/\//, "").replace(
+      /app\.bsky\.feed\./,
+      "",
+    )
+  }`;
+}
+
+interface ProfileViewDetailed {
+  did: string;
+  handle: string;
+  displayName?: string;
+  description?: string;
+  avatar?: string;
+  banner?: string;
+  followersCount?: number;
+  followsCount?: number;
+  postsCount?: number;
+  indexedAt?: string;
+  [k: string]: unknown;
+}
+const actors: Record<string, ProfileViewDetailed> = {};
+
+async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
   try {
-    const resolve = await agent.resolveHandle({ handle });
-    return resolve.data.did;
+    const did = handleOrDid.startsWith("did:plc:")
+      ? handleOrDid
+      : (await agent.resolveHandle({ handle: handleOrDid })).data.did;
+
+    if (actors[did]) {
+      return actors[did];
+    }
+
+    const { data } = await agent.api.app.bsky.actor.getProfile({ actor: did });
+    actors[did] = data;
+    return data;
   } catch (error) {
+    console.error(handleOrDid);
     console.error(error);
-    return "";
+    return { did: "", handle: "" };
   }
 }
 
@@ -55,19 +95,13 @@ serve(async (request: Request) => {
     });
   }
 
-  const handle = pathname.replace(/^\//, "");
-  const prof = `https://staging.bsky.app/profile/${handle}`;
-
-  const did = handle.startsWith("did:plc:")
-    ? handle
-    : await resolveHandle(handle);
+  const { did, handle } = await getActor(pathname.replace(/^\//, ""));
   if (did === "") {
     return new Response("Unable to resolve handle", {
       headers: { "content-type": "text/plain" },
     });
   }
 
-  // const limit = 15;
   const authorFeed = await agent.api.app.bsky.feed.getAuthorFeed({
     actor: did,
   });
@@ -83,6 +117,14 @@ serve(async (request: Request) => {
     // if (!includeReply && !!post.record.reply) return false;
     return true;
   });
+  for await (const feed of feeds) {
+    if (!feed.post.record.reply) {
+      continue;
+    }
+    await getActor(
+      getDidFromUri(feed.post.record.reply.parent.uri),
+    );
+  }
 
   const prefix = '<?xml version="1.0" encoding="UTF-8"?>';
   const res = tag(
@@ -96,20 +138,28 @@ serve(async (request: Request) => {
       "channel",
       tag("title", `Bluestream (${handle})`),
       `<atom:link href="${href}" rel="self" type="application/rss+xml" />`,
-      tag("link", prof),
+      tag("link", `https://staging.bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
       ...feeds.map(({ post }) =>
         tag(
           "item",
-          tag("title", sanitize(post.record.text)),
-          tag("description", sanitize(post.record.text)),
           tag(
-            "link",
-            `${prof}/post/${
-              post.uri.match(/app\.bsky\.feed\.post\/(\w+)/)?.at(1)
-            }`,
+            "title",
+            post.author.did !== did
+              ? `Repost original by ${post.author.handle}`
+              : post.record.reply
+              ? `Reply to ${
+                actors[getDidFromUri(post.record.reply.parent.uri)].handle
+              }`
+              : `Post by ${handle}`,
           ),
+          tag(
+            "description",
+            "<![CDATA[<p>" + sanitize(post.record.text).replace(/\n/, "<br>") +
+              "</p>]]>",
+          ),
+          tag("link", uriToPostLink(post.uri)),
           tag("guid", { isPermaLink: "false" }, post.uri),
           tag("pubDate", post.record.createdAt),
           tag("dc:creator", post.author.handle),
