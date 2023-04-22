@@ -139,6 +139,7 @@ serve(async (request: Request) => {
       version: "2.0",
       "xmlns:atom": "http://www.w3.org/2005/Atom",
       "xmlns:dc": "http://purl.org/dc/elements/1.1/",
+      "xmlns:media": "http://search.yahoo.com/mrss/",
     },
     tag(
       "channel",
@@ -153,9 +154,15 @@ serve(async (request: Request) => {
           tag("title", genTitle({ did, handle }, post)),
           tag(
             "description",
-            "<![CDATA[<p>" + sanitize(post.record.text).replace(/\n/, "<br>") +
-              "</p>]]>",
+            "<![CDATA[" +
+              tag("p", sanitize(post.record.text).replace(/\n/, "<br>")) +
+              "]]>",
           ),
+          (post.embed?.images)
+            ? post.embed?.images.map((image) =>
+              `<media:content medium="image" url="${image.thumb}"/>`
+            ).join("")
+            : "",
           tag("link", uriToPostLink(post.uri)),
           tag("guid", { isPermaLink: "false" }, post.uri),
           tag("pubDate", post.record.createdAt),
