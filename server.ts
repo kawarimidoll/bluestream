@@ -7,8 +7,23 @@ import {
 import BskyAgent from "https://esm.sh/@atproto/api@0.2.7";
 
 const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
+
+if (isDev) {
+  const env = await Deno.readTextFile("./.env");
+  env.split("\n").forEach((line) => {
+    if (line) {
+      const [key, val] = line.split("=");
+      Deno.env.set(key, val);
+    }
+  });
+}
+
 const service = "https://bsky.social";
 const agent = new BskyAgent({ service });
+
+const identifier = Deno.env.get("BLUESKY_IDENTIFIER") || "";
+const password = Deno.env.get("BLUESKY_PASSWORD") || "";
+await agent.login({ identifier, password });
 
 async function resolveHandle(handle: string) {
   try {
