@@ -4,7 +4,12 @@ import {
   tagNoVoid as tag,
 } from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
 
-import BskyAgent from "https://esm.sh/@atproto/api@0.2.7";
+import BskyAgent, {
+  AppBskyActorDefs,
+  AppBskyFeedDefs,
+} from "https://esm.sh/@atproto/api@0.2.7";
+type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
+type PostView = AppBskyFeedDefs.PostView;
 
 const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
 
@@ -39,20 +44,20 @@ function uriToPostLink(uri: string) {
     )
   }`;
 }
-
-interface ProfileViewDetailed {
-  did: string;
-  handle: string;
-  displayName?: string;
-  description?: string;
-  avatar?: string;
-  banner?: string;
-  followersCount?: number;
-  followsCount?: number;
-  postsCount?: number;
-  indexedAt?: string;
-  [k: string]: unknown;
+function genTitle(author: ProfileViewDetailed, post: PostView) {
+  const { did, handle } = author;
+  if (post.author.did !== did) {
+    return `Repost by ${handle}, original by ${post.author.handle}`;
+  }
+  const title = `Post by ${handle}`;
+  if (post.record.reply) {
+    return `${title}, reply to ${
+      actors[getDidFromUri(post.record.reply.parent.uri)].handle
+    }`;
+  }
+  return title;
 }
+
 const actors: Record<string, ProfileViewDetailed> = {};
 
 async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
@@ -121,6 +126,7 @@ serve(async (request: Request) => {
     if (!feed.post.record.reply) {
       continue;
     }
+    // store actors
     await getActor(
       getDidFromUri(feed.post.record.reply.parent.uri),
     );
@@ -144,16 +150,7 @@ serve(async (request: Request) => {
       ...feeds.map(({ post }) =>
         tag(
           "item",
-          tag(
-            "title",
-            post.author.did !== did
-              ? `Repost original by ${post.author.handle}`
-              : post.record.reply
-              ? `Reply to ${
-                actors[getDidFromUri(post.record.reply.parent.uri)].handle
-              }`
-              : `Post by ${handle}`,
-          ),
+          tag("title", genTitle({ did, handle }, post)),
           tag(
             "description",
             "<![CDATA[<p>" + sanitize(post.record.text).replace(/\n/, "<br>") +
