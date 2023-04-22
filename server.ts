@@ -5,14 +5,14 @@ import {
 } from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
 
 import BskyAgent from "https://esm.sh/@atproto/api@0.2.7";
+
+const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
 const service = "https://bsky.social";
 const agent = new BskyAgent({ service });
 
 async function resolveHandle(handle: string) {
   try {
-    const resolve = await agent.api.com.atproto.identity.resolveHandle({
-      handle,
-    });
+    const resolve = await agent.resolveHandle({ handle });
     return resolve.data.did;
   } catch (error) {
     console.error(error);
@@ -22,7 +22,7 @@ async function resolveHandle(handle: string) {
 
 serve(async (request: Request) => {
   const { href, pathname } = new URL(request.url);
-  if (!Deno.env.get("DENO_DEPLOYMENT_ID")) {
+  if (isDev) {
     console.log(pathname);
   }
 
