@@ -43,7 +43,9 @@ serve(async (request: Request) => {
   const handle = pathname.replace(/^\//, "");
   const prof = `https://staging.bsky.app/profile/${handle}`;
 
-  const repo = await resolveHandle(handle);
+  const repo = handle.startsWith("did:plc:")
+    ? handle
+    : await resolveHandle(handle);
   if (repo === "") {
     return new Response("Unable to resolve handle", {
       headers: { "content-type": "text/plain" },
