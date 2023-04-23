@@ -9,7 +9,7 @@ import BskyAgent, {
   AppBskyFeedDefs,
 } from "https://esm.sh/@atproto/api@0.2.8";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
-type PostView = AppBskyFeedDefs.PostView;
+type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
 
 const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
 
@@ -44,15 +44,16 @@ function uriToPostLink(uri: string) {
     )
   }`;
 }
-function genTitle(author: ProfileViewDetailed, post: PostView) {
-  const { did, handle } = author;
-  if (post.author.did !== did) {
+function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
+  const { handle } = author;
+  const { post, reason, reply } = feed;
+  if (reason && reason["$type"] === REARSON_TYPES.repost) {
     return `Repost by ${handle}, original by ${post.author.handle}`;
   }
   const title = `Post by ${handle}`;
-  if (post.record.reply) {
+  if (reply) {
     return `${title}, reply to ${
-      actors[getDidFromUri(post.record.reply.parent.uri)].handle
+      actors[getDidFromUri(reply.parent.uri)].handle
     }`;
   }
   return title;
@@ -80,6 +81,9 @@ async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
   }
 }
 
+const REARSON_TYPES = {
+  repost: "app.bsky.feed.defs#reasonRepost",
+};
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
   if (isDev) {
@@ -117,18 +121,20 @@ serve(async (request: Request) => {
   }
   const includeRepost = searchParams.get("repost") === "include";
   // const includeReply = searchParams.get("reply") === 'include';
-  const feeds = authorFeed.data.feed.filter(({ post }) => {
-    if (!includeRepost && post.author.did !== did) return false;
+  const feeds = authorFeed.data.feed.filter(({ reason }) => {
+    if (!includeRepost && reason && reason["$type"] === REARSON_TYPES.repost) {
+      return false;
+    }
     // if (!includeReply && !!post.record.reply) return false;
     return true;
   });
   for await (const feed of feeds) {
-    if (!feed.post.record.reply) {
+    if (!feed.reply) {
       continue;
     }
     // store actors
     await getActor(
-      getDidFromUri(feed.post.record.reply.parent.uri),
+      getDidFromUri(feed.reply.parent.uri),
     );
   }
 
@@ -148,10 +154,10 @@ serve(async (request: Request) => {
       tag("link", `https://staging.bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
-      ...feeds.map(({ post }) =>
+      ...feeds.map(({ post, reason }) =>
         tag(
           "item",
-          tag("title", genTitle({ did, handle }, post)),
+          tag("title", genTitle({ did, handle }, { post, reason })),
           tag(
             "description",
             "<![CDATA[",
