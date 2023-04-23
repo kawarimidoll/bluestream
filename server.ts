@@ -161,10 +161,13 @@ serve(async (request: Request) => {
           tag(
             "description",
             "<![CDATA[",
+            tag(
+              "div",
+              ...(post.embed?.images || []).map((image) =>
+                `<img src="${image.thumb}"/>`
+              ).join(""),
+            ),
             tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
-            ...(post.embed?.images || []).map((image) =>
-              `<img src="${image.thumb}"/>`
-            ).join(""),
             "]]>",
           ),
           (post.embed?.images)
