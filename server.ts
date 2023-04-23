@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.140.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.184.0/http/server.ts";
 import {
   sanitize,
   tagNoVoid as tag,
@@ -7,7 +7,7 @@ import {
 import BskyAgent, {
   AppBskyActorDefs,
   AppBskyFeedDefs,
-} from "https://esm.sh/@atproto/api@0.2.7";
+} from "https://esm.sh/@atproto/api@0.2.8";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type PostView = AppBskyFeedDefs.PostView;
 
