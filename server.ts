@@ -143,6 +143,7 @@ serve(async (request: Request) => {
     "rss",
     {
       version: "2.0",
+      "xmlns:content": "http://purl.org/rss/1.0/modules/content/",
       "xmlns:atom": "http://www.w3.org/2005/Atom",
       "xmlns:dc": "http://purl.org/dc/elements/1.1/",
       "xmlns:media": "http://search.yahoo.com/mrss/",
@@ -160,6 +161,18 @@ serve(async (request: Request) => {
           tag("title", genTitle({ did, handle }, { post, reason })),
           tag(
             "description",
+            "<![CDATA[",
+            tag(
+              "div",
+              ...(post.embed?.images || []).map((image) =>
+                `<img src="${image.thumb}"/>`
+              ).join(""),
+            ),
+            tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
+            "]]>",
+          ),
+          tag(
+            "content:encoded",
             "<![CDATA[",
             tag(
               "div",
