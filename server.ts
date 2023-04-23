@@ -154,9 +154,12 @@ serve(async (request: Request) => {
           tag("title", genTitle({ did, handle }, post)),
           tag(
             "description",
-            "<![CDATA[" +
-              tag("p", sanitize(post.record.text).replace(/\n/, "<br>")) +
-              "]]>",
+            "<![CDATA[",
+            tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
+            ...(post.embed?.images || []).map((image) =>
+              `<img src="${image.thumb}"/>`
+            ).join(""),
+            "]]>",
           ),
           (post.embed?.images)
             ? post.embed?.images.map((image) =>
