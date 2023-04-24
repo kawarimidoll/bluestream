@@ -16,9 +16,8 @@
     body {
       text-align: center;
     }
-    .center {
-      display: flex;
-      justify-content: center;
+    input {
+      display: inline;
     }
   </style>
 </head>
@@ -28,9 +27,16 @@
   <div>
     <p>RSS feed generator for Bluesky.</p>
     <p>Access to the path /bsky-handle directory or input handle of Bluesky here ↓</p>
-    <form class="center">
-      <input id="input" name="input-handle" aria-label="input-handle" required autofocus placeholder="xxx.bsky.social" />
-      <button id="button" type="submit" onclick="go()">Generate feed</button>
+    <form id="form">
+      <div>
+        <input id="input-handle" name="input-handle" aria-label="input-handle" required autofocus placeholder="xxx.bsky.social" />
+        <input type="submit" id="submit-button" name="submit-button" aria-label="submit-button" value="Generate feed" />
+      </div>
+      <div>
+        <label>
+          <input type="checkbox" id="include-repost" name="include-repost" aria-label="include-repost" /> include raw repost (quote repost is always included)
+        </label>
+      </div>
     </form>
     <p>You can use DID (like <code>did:plc:xxxx</code>) instead of handle.</p>
     <p>Currently only posts in bsky.social is supported.</p>
@@ -39,10 +45,25 @@
     </p>
   </div>
   <script>
-    function go() {
-      document.getElementById('button').disabled = true;
-      window.location.href = window.location.origin + '/' + document.getElementById('input').value;
-    }
+    const form = document.getElementById("form");
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+
+      document.getElementById("submit-button").value = "Calculating...";
+      [...document.getElementsByTagName("input")].forEach(e => e.disabled = true);
+
+      const url = new URL(window.location.href);
+      url.pathname = document.getElementById("input-handle").value;
+      if (document.getElementById("include-repost").checked) {
+        url.searchParams.set("repost", "include");
+      }
+      window.location.href = url.toString();
+    });
+
+    window.addEventListener('pageshow', () => {
+      document.getElementById("submit-button").value = "Generate feed";
+      [...document.getElementsByTagName("input")].forEach(e => e.disabled = false);
+    });
   </script>
 </body>
 
