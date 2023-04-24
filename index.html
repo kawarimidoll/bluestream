@@ -55,7 +55,7 @@
       const url = new URL(window.location.href);
       url.pathname = document.getElementById("input-handle").value;
       if (document.getElementById("include-repost").checked) {
-        url.searchParams.set("repost", "include");
+        url.pathname += '/includeRepost'
       }
       window.location.href = url.toString();
     });

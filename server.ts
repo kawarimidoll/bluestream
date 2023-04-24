@@ -48,10 +48,10 @@ function uriToPostLink(uri: string) {
 function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   const { handle } = author;
   const { post, reason, reply } = feed;
-  if (reason && reason["$type"] === BSKY_TYPES.repost) {
-    return `Repost by ${handle}, original by ${post.author.handle}`;
-  }
-  let title = `Post by ${handle}`;
+  let title = (reason && reason["$type"] === BSKY_TYPES.repost)
+    ? `Repost by ${handle}: `
+    : "";
+  title += `Post by ${post.author.handle}`;
   if (reply) {
     title = `${title}, reply to ${
       actors[getDidFromUri(reply.parent.uri)].handle
@@ -106,7 +106,7 @@ const BSKY_TYPES = {
   view: "app.bsky.embed.record#view",
 };
 serve(async (request: Request) => {
-  const { href, pathname, searchParams } = new URL(request.url);
+  const { href, pathname } = new URL(request.url);
   if (isDev) {
     console.log(pathname);
   }
@@ -125,7 +125,8 @@ serve(async (request: Request) => {
     });
   }
 
-  const { did, handle } = await getActor(pathname.replace(/^\//, ""));
+  const [inputHandle, ...options] = pathname.split("/").filter((q) => q);
+  const { did, handle } = await getActor(inputHandle);
   if (did === "") {
     return new Response("Unable to resolve handle", {
       headers: { "content-type": "text/plain" },
@@ -140,7 +141,7 @@ serve(async (request: Request) => {
       headers: { "content-type": "text/plain" },
     });
   }
-  const includeRepost = searchParams.get("repost") === "include";
+  const includeRepost = options.includes("includeRepost");
   // const includeReply = searchParams.get("reply") === 'include';
   const feeds = authorFeed.data.feed.filter(({ reason }) => {
     if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
