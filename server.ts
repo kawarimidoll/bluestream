@@ -47,14 +47,17 @@ function uriToPostLink(uri: string) {
 function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   const { handle } = author;
   const { post, reason, reply } = feed;
-  if (reason && reason["$type"] === REARSON_TYPES.repost) {
+  if (reason && reason["$type"] === BSKY_TYPES.repost) {
     return `Repost by ${handle}, original by ${post.author.handle}`;
   }
-  const title = `Post by ${handle}`;
+  let title = `Post by ${handle}`;
   if (reply) {
-    return `${title}, reply to ${
+    title = `${title}, reply to ${
       actors[getDidFromUri(reply.parent.uri)].handle
     }`;
+  }
+  if (post.embed && post.embed["$type"] === BSKY_TYPES.view) {
+    title = `${title}, quoting ${post.embed.record!.author.handle}`;
   }
   return title;
 }
@@ -81,8 +84,9 @@ async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
   }
 }
 
-const REARSON_TYPES = {
+const BSKY_TYPES = {
   repost: "app.bsky.feed.defs#reasonRepost",
+  view: "app.bsky.embed.record#view",
 };
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
@@ -122,7 +126,7 @@ serve(async (request: Request) => {
   const includeRepost = searchParams.get("repost") === "include";
   // const includeReply = searchParams.get("reply") === 'include';
   const feeds = authorFeed.data.feed.filter(({ reason }) => {
-    if (!includeRepost && reason && reason["$type"] === REARSON_TYPES.repost) {
+    if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
       return false;
     }
     // if (!includeReply && !!post.record.reply) return false;
@@ -169,6 +173,13 @@ serve(async (request: Request) => {
               ).join(""),
             ),
             tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
+            (post.embed && post.embed["$type"] === BSKY_TYPES.view)
+              ? tag(
+                "p",
+                "[quote]<br>",
+                sanitize(post.embed.record!.value.text),
+              )
+              : "",
             "]]>",
           ),
           tag(
