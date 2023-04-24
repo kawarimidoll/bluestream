@@ -10,6 +10,7 @@ import BskyAgent, {
 } from "https://esm.sh/@atproto/api@0.2.8";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
+type PostView = AppBskyFeedDefs.PostView;
 
 const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
 
@@ -60,6 +61,22 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
     title = `${title}, quoting ${post.embed.record!.author.handle}`;
   }
   return title;
+}
+function genCdataContent(post: PostView) {
+  return [
+    "<![CDATA[",
+    tag(
+      "div",
+      ...(post.embed?.images || []).map((image) =>
+        `<img src="${image.thumb}"/>`
+      ),
+    ),
+    tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
+    (post.embed && post.embed["$type"] === BSKY_TYPES.view)
+      ? tag("p", "<br>[quote]<br>", sanitize(post.embed.record!.value.text))
+      : "",
+    "]]>",
+  ];
 }
 
 const actors: Record<string, ProfileViewDetailed> = {};
@@ -163,42 +180,11 @@ serve(async (request: Request) => {
         tag(
           "item",
           tag("title", genTitle({ did, handle }, { post, reason })),
-          tag(
-            "description",
-            "<![CDATA[",
-            tag(
-              "div",
-              ...(post.embed?.images || []).map((image) =>
-                `<img src="${image.thumb}"/>`
-              ).join(""),
-            ),
-            tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
-            (post.embed && post.embed["$type"] === BSKY_TYPES.view)
-              ? tag(
-                "p",
-                "[quote]<br>",
-                sanitize(post.embed.record!.value.text),
-              )
-              : "",
-            "]]>",
-          ),
-          tag(
-            "content:encoded",
-            "<![CDATA[",
-            tag(
-              "div",
-              ...(post.embed?.images || []).map((image) =>
-                `<img src="${image.thumb}"/>`
-              ).join(""),
-            ),
-            tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
-            "]]>",
-          ),
-          (post.embed?.images)
-            ? post.embed?.images.map((image) =>
-              `<media:content medium="image" url="${image.thumb}"/>`
-            ).join("")
-            : "",
+          tag("description", ...genCdataContent(post)),
+          tag("content:encoded", ...genCdataContent(post)),
+          ...(post.embed?.images || []).map((image) =>
+            `<media:content medium="image" url="${image.thumb}"/>`
+          ).join(""),
           tag("link", uriToPostLink(post.uri)),
           tag("guid", { isPermaLink: "false" }, post.uri),
           tag("pubDate", post.record.createdAt),
