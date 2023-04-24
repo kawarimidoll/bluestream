@@ -186,7 +186,14 @@ serve(async (request: Request) => {
             `<media:content medium="image" url="${image.thumb}"/>`
           ).join(""),
           tag("link", uriToPostLink(post.uri)),
-          tag("guid", { isPermaLink: "false" }, post.uri),
+          tag(
+            "guid",
+            { isPermaLink: "false" },
+            post.uri +
+              (reason && reason["$type"] === BSKY_TYPES.repost
+                ? "-repost"
+                : ""),
+          ),
           tag("pubDate", post.record.createdAt),
           tag("dc:creator", post.author.handle),
         )
