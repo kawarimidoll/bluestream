@@ -181,7 +181,6 @@ serve(async (request: Request) => {
           "item",
           tag("title", genTitle({ did, handle }, { post, reason })),
           tag("description", ...genCdataContent(post)),
-          tag("content:encoded", ...genCdataContent(post)),
           ...(post.embed?.images || []).map((image) =>
             `<media:content medium="image" url="${image.thumb}"/>`
           ).join(""),
