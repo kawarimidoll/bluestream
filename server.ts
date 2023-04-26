@@ -7,7 +7,7 @@ import {
 import BskyAgent, {
   AppBskyActorDefs,
   AppBskyFeedDefs,
-} from "https://esm.sh/@atproto/api@0.2.8";
+} from "https://esm.sh/@atproto/api@0.2.9";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
 type PostView = AppBskyFeedDefs.PostView;
