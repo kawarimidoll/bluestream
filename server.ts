@@ -167,7 +167,6 @@ serve(async (request: Request) => {
       "xmlns:content": "http://purl.org/rss/1.0/modules/content/",
       "xmlns:atom": "http://www.w3.org/2005/Atom",
       "xmlns:dc": "http://purl.org/dc/elements/1.1/",
-      "xmlns:media": "http://search.yahoo.com/mrss/",
     },
     tag(
       "channel",
@@ -182,7 +181,7 @@ serve(async (request: Request) => {
           tag("title", genTitle({ did, handle }, { post, reason })),
           tag("description", ...genCdataContent(post)),
           ...(post.embed?.images || []).map((image) =>
-            `<media:content medium="image" url="${image.thumb}"/>`
+            `<enclosure type="image/jpeg" url="${image.thumb}"/>`
           ).join(""),
           tag("link", uriToPostLink(post.uri)),
           tag(
