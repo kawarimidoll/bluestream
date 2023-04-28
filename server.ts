@@ -181,7 +181,7 @@ serve(async (request: Request) => {
           tag("title", genTitle({ did, handle }, { post, reason })),
           tag("description", ...genCdataContent(post)),
           ...(post.embed?.images || []).map((image) =>
-            `<enclosure type="image/jpeg" url="${image.thumb}"/>`
+            `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
           tag("link", uriToPostLink(post.uri)),
           tag(
