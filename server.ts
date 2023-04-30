@@ -63,8 +63,17 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   }
   return title;
 }
-function genMainContent(post: PostView, usePsky: boolean) {
+function genMainContent(
+  post: PostView,
+  usePsky: boolean,
+  includeRepost: boolean,
+) {
   if (usePsky) {
+    if (
+      includeRepost && post.embed && post.embed["$type"] === BSKY_TYPES.view
+    ) {
+      return [uriToPostLink(post.embed.record.uri, usePsky)];
+    }
     return [];
   }
   return [
@@ -186,7 +195,7 @@ serve(async (request: Request) => {
         tag(
           "item",
           tag("title", genTitle({ did, handle }, { post, reason })),
-          tag("description", ...genMainContent(post, usePsky)),
+          tag("description", ...genMainContent(post, usePsky, includeRepost)),
           ...(post.embed?.images || []).map((image) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
