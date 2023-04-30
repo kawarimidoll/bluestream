@@ -60,6 +60,8 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   }
   if (post.embed && post.embed["$type"] === BSKY_TYPES.view) {
     title = `${title}, quoting ${post.embed.record!.author.handle}`;
+  } else if (post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia) {
+    title = `${title}, quoting ${post.embed.record!.record!.author.handle}`;
   }
   return title;
 }
@@ -73,7 +75,12 @@ function genMainContent(
       includeRepost && post.embed && post.embed["$type"] === BSKY_TYPES.view
     ) {
       return [uriToPostLink(post.embed.record.uri, usePsky)];
+    } else if (
+      post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia
+    ) {
+      return [uriToPostLink(post.embed.record.record.uri, usePsky)];
     }
+
     return [];
   }
   return [
@@ -117,6 +124,7 @@ async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
 const BSKY_TYPES = {
   repost: "app.bsky.feed.defs#reasonRepost",
   view: "app.bsky.embed.record#view",
+  recordWithMedia: "app.bsky.embed.recordWithMedia#view",
 };
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
