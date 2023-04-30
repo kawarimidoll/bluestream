@@ -74,11 +74,11 @@ function genMainContent(
     if (
       includeRepost && post.embed && post.embed["$type"] === BSKY_TYPES.view
     ) {
-      return [uriToPostLink(post.embed.record.uri, usePsky)];
+      return ["[quote] ", uriToPostLink(post.embed.record.uri, usePsky)];
     } else if (
       post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia
     ) {
-      return [uriToPostLink(post.embed.record.record.uri, usePsky)];
+      return ["[quote] ", uriToPostLink(post.embed.record.record.uri, usePsky)];
     }
 
     return [];
