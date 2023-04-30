@@ -37,8 +37,9 @@ function getDidFromUri(uri: string) {
     "",
   );
 }
-function uriToPostLink(uri: string) {
-  return `https://staging.bsky.app/profile/${
+function uriToPostLink(uri: string, usePsky: boolean) {
+  const origin = usePsky ? "psky.app" : "staging.bsky.app";
+  return `https://${origin}/profile/${
     uri.replace(/^at:\/\//, "").replace(
       /app\.bsky\.feed\./,
       "",
@@ -62,9 +63,9 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   }
   return title;
 }
-function genMainContent(post: PostView, usePsky:boolean) {
+function genMainContent(post: PostView, usePsky: boolean) {
   if (usePsky) {
-    return uriToPostLink(post.uri).replace('staging.b', 'p')
+    return [];
   }
   return [
     "<![CDATA[",
@@ -175,7 +176,9 @@ serve(async (request: Request) => {
     tag(
       "channel",
       tag("title", `Bluestream (${handle})`),
-      `<atom:link href="${sanitize(href)}" rel="self" type="application/rss+xml" />`,
+      `<atom:link href="${
+        sanitize(href)
+      }" rel="self" type="application/rss+xml" />`,
       tag("link", `https://staging.bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
@@ -187,7 +190,7 @@ serve(async (request: Request) => {
           ...(post.embed?.images || []).map((image) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
-          tag("link", uriToPostLink(post.uri)),
+          tag("link", uriToPostLink(post.uri, usePsky)),
           tag(
             "guid",
             { isPermaLink: "false" },
