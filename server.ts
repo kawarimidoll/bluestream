@@ -199,10 +199,10 @@ serve(async (request: Request) => {
       tag("link", `https://staging.bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
-      ...feeds.map(({ post, reason }) =>
+      ...feeds.map(({ post, reason, reply }) =>
         tag(
           "item",
-          tag("title", genTitle({ did, handle }, { post, reason })),
+          tag("title", genTitle({ did, handle }, { post, reason, reply })),
           tag("description", ...genMainContent(post, usePsky, includeRepost)),
           ...(post.embed?.images || []).map((image) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
