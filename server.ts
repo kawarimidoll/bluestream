@@ -37,8 +37,9 @@ function getDidFromUri(uri: string) {
     "",
   );
 }
-function uriToPostLink(uri: string) {
-  return `https://staging.bsky.app/profile/${
+function uriToPostLink(uri: string, usePsky: boolean) {
+  const origin = usePsky ? "psky.app" : "staging.bsky.app";
+  return `https://${origin}/profile/${
     uri.replace(/^at:\/\//, "").replace(
       /app\.bsky\.feed\./,
       "",
@@ -59,10 +60,29 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   }
   if (post.embed && post.embed["$type"] === BSKY_TYPES.view) {
     title = `${title}, quoting ${post.embed.record!.author.handle}`;
+  } else if (post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia) {
+    title = `${title}, quoting ${post.embed.record!.record!.author.handle}`;
   }
   return title;
 }
-function genCdataContent(post: PostView) {
+function genMainContent(
+  post: PostView,
+  usePsky: boolean,
+  includeRepost: boolean,
+) {
+  if (usePsky) {
+    if (
+      includeRepost && post.embed && post.embed["$type"] === BSKY_TYPES.view
+    ) {
+      return ["[quote] ", uriToPostLink(post.embed.record.uri, usePsky)];
+    } else if (
+      post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia
+    ) {
+      return ["[quote] ", uriToPostLink(post.embed.record.record.uri, usePsky)];
+    }
+
+    return [];
+  }
   return [
     "<![CDATA[",
     tag(
@@ -104,6 +124,7 @@ async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
 const BSKY_TYPES = {
   repost: "app.bsky.feed.defs#reasonRepost",
   view: "app.bsky.embed.record#view",
+  recordWithMedia: "app.bsky.embed.recordWithMedia#view",
 };
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
@@ -140,6 +161,7 @@ serve(async (request: Request) => {
       headers: { "content-type": "text/plain" },
     });
   }
+  const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
   // const includeReply = searchParams.get("reply") === 'include';
   const feeds = authorFeed.data.feed.filter(({ reason }) => {
@@ -167,12 +189,13 @@ serve(async (request: Request) => {
       "xmlns:content": "http://purl.org/rss/1.0/modules/content/",
       "xmlns:atom": "http://www.w3.org/2005/Atom",
       "xmlns:dc": "http://purl.org/dc/elements/1.1/",
-      "xmlns:media": "http://search.yahoo.com/mrss/",
     },
     tag(
       "channel",
       tag("title", `Bluestream (${handle})`),
-      `<atom:link href="${href}" rel="self" type="application/rss+xml" />`,
+      `<atom:link href="${
+        sanitize(href)
+      }" rel="self" type="application/rss+xml" />`,
       tag("link", `https://staging.bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
@@ -180,11 +203,11 @@ serve(async (request: Request) => {
         tag(
           "item",
           tag("title", genTitle({ did, handle }, { post, reason })),
-          tag("description", ...genCdataContent(post)),
+          tag("description", ...genMainContent(post, usePsky, includeRepost)),
           ...(post.embed?.images || []).map((image) =>
-            `<media:content medium="image" url="${image.thumb}"/>`
+            `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
-          tag("link", uriToPostLink(post.uri)),
+          tag("link", uriToPostLink(post.uri, usePsky)),
           tag(
             "guid",
             { isPermaLink: "false" },
