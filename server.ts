@@ -62,7 +62,10 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   }
   return title;
 }
-function genCdataContent(post: PostView) {
+function genMainContent(post: PostView, usePsky:boolean) {
+  if (usePsky) {
+    return uriToPostLink(post.uri).replace('staging.b', 'p')
+  }
   return [
     "<![CDATA[",
     tag(
@@ -140,6 +143,7 @@ serve(async (request: Request) => {
       headers: { "content-type": "text/plain" },
     });
   }
+  const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
   // const includeReply = searchParams.get("reply") === 'include';
   const feeds = authorFeed.data.feed.filter(({ reason }) => {
@@ -179,7 +183,7 @@ serve(async (request: Request) => {
         tag(
           "item",
           tag("title", genTitle({ did, handle }, { post, reason })),
-          tag("description", ...genCdataContent(post)),
+          tag("description", ...genMainContent(post, usePsky)),
           ...(post.embed?.images || []).map((image) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
