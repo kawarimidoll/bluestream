@@ -175,7 +175,7 @@ serve(async (request: Request) => {
     tag(
       "channel",
       tag("title", `Bluestream (${handle})`),
-      `<atom:link href="${href}" rel="self" type="application/rss+xml" />`,
+      `<atom:link href="${sanitize(href)}" rel="self" type="application/rss+xml" />`,
       tag("link", `https://staging.bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
       tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
