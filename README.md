@@ -20,7 +20,7 @@ After that, run `deno task dev` to start server.
 
 ## Author
 
-[kawarimidoll](https://staging.bsky.app/profile/did:plc:okalufxun5rpqzdrwf5bpu3d)
+[kawarimidoll](https://bsky.app/profile/did:plc:okalufxun5rpqzdrwf5bpu3d)
 
 ## License
 
