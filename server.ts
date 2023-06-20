@@ -7,6 +7,7 @@ import {
 import BskyAgent, {
   AppBskyActorDefs,
   AppBskyFeedDefs,
+  AppBskyFeedPost,
 } from "https://esm.sh/@atproto/api@0.3.12";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
@@ -125,6 +126,7 @@ const BSKY_TYPES = {
   repost: "app.bsky.feed.defs#reasonRepost",
   view: "app.bsky.embed.record#view",
   recordWithMedia: "app.bsky.embed.recordWithMedia#view",
+  mention: "app.bsky.richtext.facet#mention",
 };
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
@@ -164,11 +166,21 @@ serve(async (request: Request) => {
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
   const excludeReply = searchParams.get("reply") === "exclude";
+  const excludeMention = searchParams.get("mention") === "exclude";
   const feeds = authorFeed.data.feed.filter(({ post, reason }) => {
     if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
       return false;
     }
-    if (excludeReply && !!post?.record?.reply) return false;
+    const record: AppBskyFeedPost.Record = post?.record;
+    if (excludeReply && !!record?.reply) return false;
+    if (
+      excludeMention &&
+      !!(record?.facets || []).some((facet: AppBskyRichtextFacet.Main) =>
+        (facet.features || []).some((feature: { $type: string }) =>
+          feature["$type"] === BSKY_TYPES.mention
+        )
+      )
+    ) return false;
     return true;
   });
   for await (const feed of feeds) {
