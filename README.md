@@ -8,7 +8,8 @@ https://bluestream.deno.dev/
 
 This works with [Deno](https://deno.land).
 
-To run this locally, clone this repository and create `.env` file with the following content:
+To run this locally, clone this repository and create `.env` file with the
+following content:
 
 ```
 BLUESKY_IDENTIFIER=your-handle
@@ -16,7 +17,6 @@ BLUESKY_PASSWORD=your-pass
 ```
 
 After that, run `deno task dev` to start server.
-
 
 ## Author
 
