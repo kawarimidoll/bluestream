@@ -6,8 +6,10 @@ import {
 
 import BskyAgent, {
   AppBskyActorDefs,
+  AppBskyEmbedImages,
   AppBskyFeedDefs,
   AppBskyFeedPost,
+  AppBskyRichtextFacet,
 } from "https://esm.sh/@atproto/api@0.3.12";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
@@ -88,7 +90,7 @@ function genMainContent(
     "<![CDATA[",
     tag(
       "div",
-      ...(post.embed?.images || []).map((image) =>
+      ...(post.embed?.images || []).map((image: AppBskyEmbedImages.Main) =>
         `<img src="${image.thumb}"/>`
       ),
     ),
@@ -155,19 +157,22 @@ serve(async (request: Request) => {
     });
   }
 
-  const authorFeed = await agent.api.app.bsky.feed.getAuthorFeed({
+  const response = await agent.api.app.bsky.feed.getAuthorFeed({
     actor: did,
   });
-  if (!authorFeed?.data?.feed) {
+  if (!response?.data?.feed) {
     return new Response("Unable to get posts", {
       headers: { "content-type": "text/plain" },
     });
   }
+  const authorFeed: FeedViewPost[] = response.data.feed;
+
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
   const excludeReply = searchParams.get("reply") === "exclude";
   const excludeMention = searchParams.get("mention") === "exclude";
-  const feeds = authorFeed.data.feed.filter(({ post, reason }) => {
+
+  const feeds = authorFeed.filter(({ post, reason }) => {
     if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
       return false;
     }
@@ -216,7 +221,7 @@ serve(async (request: Request) => {
           "item",
           tag("title", genTitle({ did, handle }, { post, reason, reply })),
           tag("description", ...genMainContent(post, usePsky, includeRepost)),
-          ...(post.embed?.images || []).map((image) =>
+          ...(post.embed?.images || []).map((image: AppBskyEmbedImages.Main) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
           tag("link", uriToPostLink(post.uri, usePsky)),
