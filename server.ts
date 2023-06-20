@@ -163,12 +163,12 @@ serve(async (request: Request) => {
   }
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
-  // const includeReply = searchParams.get("reply") === 'include';
-  const feeds = authorFeed.data.feed.filter(({ reason }) => {
+  const excludeReply = searchParams.get("reply") === "exclude";
+  const feeds = authorFeed.data.feed.filter(({ post, reason }) => {
     if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
       return false;
     }
-    // if (!includeReply && !!post.record.reply) return false;
+    if (excludeReply && !!post?.record?.reply) return false;
     return true;
   });
   for await (const feed of feeds) {
