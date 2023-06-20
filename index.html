@@ -40,6 +40,16 @@
         </div>
         <div>
           <label>
+            <input type="checkbox" id="exclude-reply" name="exclude-reply" aria-label="exclude-reply" /> exclude reply (the post reply to the other post)
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" id="exclude-mention" name="exclude-mention" aria-label="exclude-mention" /> exclude mention (the post that contains <code>@someone</code>)
+          </label>
+        </div>
+        <div>
+          <label>
             <input type="checkbox" id="link-psky" name="link-psky" aria-label="link-psky" /> Use psky.app for link (EXPERIMENTAL, this is useful for embed)
           </label>
         </div>
@@ -63,6 +73,12 @@
       url.pathname = document.getElementById("input-handle").value;
       if (document.getElementById("include-repost").checked) {
         url.searchParams.set("repost", "include");
+      }
+      if (document.getElementById("exclude-reply").checked) {
+        url.searchParams.set("reply", "exclude");
+      }
+      if (document.getElementById("exclude-mention").checked) {
+        url.searchParams.set("mention", "exclude");
       }
       if (document.getElementById("link-psky").checked) {
         url.searchParams.set("link", "psky");

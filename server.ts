@@ -6,7 +6,10 @@ import {
 
 import BskyAgent, {
   AppBskyActorDefs,
+  AppBskyEmbedImages,
   AppBskyFeedDefs,
+  AppBskyFeedPost,
+  AppBskyRichtextFacet,
 } from "https://esm.sh/@atproto/api@0.3.12";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
@@ -87,7 +90,7 @@ function genMainContent(
     "<![CDATA[",
     tag(
       "div",
-      ...(post.embed?.images || []).map((image) =>
+      ...(post.embed?.images || []).map((image: AppBskyEmbedImages.Main) =>
         `<img src="${image.thumb}"/>`
       ),
     ),
@@ -125,6 +128,7 @@ const BSKY_TYPES = {
   repost: "app.bsky.feed.defs#reasonRepost",
   view: "app.bsky.embed.record#view",
   recordWithMedia: "app.bsky.embed.recordWithMedia#view",
+  mention: "app.bsky.richtext.facet#mention",
 };
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
@@ -153,22 +157,35 @@ serve(async (request: Request) => {
     });
   }
 
-  const authorFeed = await agent.api.app.bsky.feed.getAuthorFeed({
+  const response = await agent.api.app.bsky.feed.getAuthorFeed({
     actor: did,
   });
-  if (!authorFeed?.data?.feed) {
+  if (!response?.data?.feed) {
     return new Response("Unable to get posts", {
       headers: { "content-type": "text/plain" },
     });
   }
+  const authorFeed: FeedViewPost[] = response.data.feed;
+
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
-  // const includeReply = searchParams.get("reply") === 'include';
-  const feeds = authorFeed.data.feed.filter(({ reason }) => {
+  const excludeReply = searchParams.get("reply") === "exclude";
+  const excludeMention = searchParams.get("mention") === "exclude";
+
+  const feeds = authorFeed.filter(({ post, reason }) => {
     if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
       return false;
     }
-    // if (!includeReply && !!post.record.reply) return false;
+    const record: AppBskyFeedPost.Record = post?.record;
+    if (excludeReply && !!record?.reply) return false;
+    if (
+      excludeMention &&
+      !!(record?.facets || []).some((facet: AppBskyRichtextFacet.Main) =>
+        (facet.features || []).some((feature: { $type: string }) =>
+          feature["$type"] === BSKY_TYPES.mention
+        )
+      )
+    ) return false;
     return true;
   });
   for await (const feed of feeds) {
@@ -204,7 +221,7 @@ serve(async (request: Request) => {
           "item",
           tag("title", genTitle({ did, handle }, { post, reason, reply })),
           tag("description", ...genMainContent(post, usePsky, includeRepost)),
-          ...(post.embed?.images || []).map((image) =>
+          ...(post.embed?.images || []).map((image: AppBskyEmbedImages.Main) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
           tag("link", uriToPostLink(post.uri, usePsky)),
