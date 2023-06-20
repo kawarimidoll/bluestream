@@ -74,6 +74,12 @@
       if (document.getElementById("include-repost").checked) {
         url.searchParams.set("repost", "include");
       }
+      if (document.getElementById("exclude-reply").checked) {
+        url.searchParams.set("reply", "exclude");
+      }
+      if (document.getElementById("exclude-mention").checked) {
+        url.searchParams.set("mention", "exclude");
+      }
       if (document.getElementById("link-psky").checked) {
         url.searchParams.set("link", "psky");
       }
