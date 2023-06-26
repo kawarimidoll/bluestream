@@ -53,7 +53,9 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   const { handle } = author;
   const { post, reason, reply } = feed;
   if (reason && reason["$type"] === BSKY_TYPES.repost) {
-    return `Repost by ${handle}, original by ${post.author.handle}`;
+    return `Repost by ${handle}, original by ${
+      post.author?.handle || "unknown"
+    }`;
   }
   let title = `Post by ${handle}`;
   if (reply) {
@@ -61,10 +63,20 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
       actors[getDidFromUri(reply.parent.uri)].handle
     }`;
   }
-  if (post.embed && post.embed["$type"] === BSKY_TYPES.view) {
-    title = `${title}, quoting ${post.embed.record!.author.handle}`;
-  } else if (post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia) {
-    title = `${title}, quoting ${post.embed.record!.record!.author.handle}`;
+  if (post.embed) {
+    if (
+      post.embed["$type"] === BSKY_TYPES.view &&
+      post.embed.record["$type"] === BSKY_TYPES.viewRecord
+    ) {
+      title = `${title}, quoting ${
+        post.embed.record!.author?.handle || "unknown"
+      }`;
+    } else if (post.embed["$type"] === BSKY_TYPES.recordWithMedia) {
+      // NOTE: checking viewRecord may need here
+      title = `${title}, quoting ${
+        post.embed.record!.record!.author?.handle || "unknown"
+      }`;
+    }
   }
   return title;
 }
@@ -95,8 +107,13 @@ function genMainContent(
       ),
     ),
     tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
-    (post.embed && post.embed["$type"] === BSKY_TYPES.view)
-      ? tag("p", "<br>[quote]<br>", sanitize(post.embed.record!.value.text))
+    (post.embed && post.embed["$type"] === BSKY_TYPES.view &&
+        post.embed.record["$type"] === BSKY_TYPES.viewRecord)
+      ? tag(
+        "p",
+        "<br>[quote]<br>",
+        sanitize(post.embed.record!.value?.text || "unknown"),
+      )
       : "",
     "]]>",
   ];
@@ -127,6 +144,7 @@ async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
 const BSKY_TYPES = {
   repost: "app.bsky.feed.defs#reasonRepost",
   view: "app.bsky.embed.record#view",
+  viewRecord: "app.bsky.embed.record#viewRecord",
   recordWithMedia: "app.bsky.embed.recordWithMedia#view",
   mention: "app.bsky.richtext.facet#mention",
 };
