@@ -27,6 +27,20 @@ if (isDev) {
   });
 }
 
+const BSKY_TYPES = {
+  repost: "app.bsky.feed.defs#reasonRepost",
+  view: "app.bsky.embed.record#view",
+  viewRecord: "app.bsky.embed.record#viewRecord",
+  recordWithMedia: "app.bsky.embed.recordWithMedia#view",
+  mention: "app.bsky.richtext.facet#mention",
+};
+function hasBskyType(
+  record: { $type: string } | undefined,
+  type: keyof typeof BSKY_TYPES,
+) {
+  return record?.$type === BSKY_TYPES[type];
+}
+
 const service = "https://bsky.social";
 const agent = new BskyAgent({ service });
 
@@ -52,7 +66,7 @@ function uriToPostLink(uri: string, usePsky: boolean) {
 function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   const { handle } = author;
   const { post, reason, reply } = feed;
-  if (reason && reason["$type"] === BSKY_TYPES.repost) {
+  if (hasBskyType(reason, "repost")) {
     return `Repost by ${handle}, original by ${
       post.author?.handle || "unknown"
     }`;
@@ -65,13 +79,13 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   }
   if (post.embed) {
     if (
-      post.embed["$type"] === BSKY_TYPES.view &&
-      post.embed.record["$type"] === BSKY_TYPES.viewRecord
+      hasBskyType(post.embed, "view") &&
+      hasBskyType(post.embed.record, "viewRecord")
     ) {
       title = `${title}, quoting ${
         post.embed.record!.author?.handle || "unknown"
       }`;
-    } else if (post.embed["$type"] === BSKY_TYPES.recordWithMedia) {
+    } else if (hasBskyType(post.embed, "recordWithMedia")) {
       // NOTE: checking viewRecord may need here
       title = `${title}, quoting ${
         post.embed.record!.record!.author?.handle || "unknown"
@@ -86,13 +100,9 @@ function genMainContent(
   includeRepost: boolean,
 ) {
   if (usePsky) {
-    if (
-      includeRepost && post.embed && post.embed["$type"] === BSKY_TYPES.view
-    ) {
+    if (includeRepost && hasBskyType(post.embed, "view")) {
       return ["[quote] ", uriToPostLink(post.embed.record.uri, usePsky)];
-    } else if (
-      post.embed && post.embed["$type"] === BSKY_TYPES.recordWithMedia
-    ) {
+    } else if (hasBskyType(post.embed, "recordWithMedia")) {
       return ["[quote] ", uriToPostLink(post.embed.record.record.uri, usePsky)];
     }
 
@@ -107,8 +117,8 @@ function genMainContent(
       ),
     ),
     tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
-    (post.embed && post.embed["$type"] === BSKY_TYPES.view &&
-        post.embed.record["$type"] === BSKY_TYPES.viewRecord)
+    (hasBskyType(post.embed, "view") &&
+        hasBskyType(post.embed.record, "viewRecord"))
       ? tag(
         "p",
         "<br>[quote]<br>",
@@ -141,13 +151,6 @@ async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
   }
 }
 
-const BSKY_TYPES = {
-  repost: "app.bsky.feed.defs#reasonRepost",
-  view: "app.bsky.embed.record#view",
-  viewRecord: "app.bsky.embed.record#viewRecord",
-  recordWithMedia: "app.bsky.embed.recordWithMedia#view",
-  mention: "app.bsky.richtext.facet#mention",
-};
 serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
   if (isDev) {
@@ -191,7 +194,7 @@ serve(async (request: Request) => {
   const excludeMention = searchParams.get("mention") === "exclude";
 
   const feeds = authorFeed.filter(({ post, reason }) => {
-    if (!includeRepost && reason && reason["$type"] === BSKY_TYPES.repost) {
+    if (!includeRepost && hasBskyType(reason, "repost")) {
       return false;
     }
     const record: AppBskyFeedPost.Record = post?.record;
@@ -200,7 +203,7 @@ serve(async (request: Request) => {
       excludeMention &&
       !!(record?.facets || []).some((facet: AppBskyRichtextFacet.Main) =>
         (facet.features || []).some((feature: { $type: string }) =>
-          feature["$type"] === BSKY_TYPES.mention
+          hasBskyType(feature, "mention")
         )
       )
     ) return false;
@@ -246,10 +249,7 @@ serve(async (request: Request) => {
           tag(
             "guid",
             { isPermaLink: "false" },
-            post.uri +
-              (reason && reason["$type"] === BSKY_TYPES.repost
-                ? "-repost"
-                : ""),
+            post.uri + (hasBskyType(reason, "repost") ? "-repost" : ""),
           ),
           tag("pubDate", post.record.createdAt),
           tag("dc:creator", post.author.handle),
