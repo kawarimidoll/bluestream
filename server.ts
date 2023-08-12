@@ -116,7 +116,7 @@ function genMainContent(
         `<img src="${image.thumb}"/>`
       ),
     ),
-    tag("p", sanitize(post.record.text).replace(/\n/, "<br>")),
+    tag("p", sanitize(post.record.text).replace(/\n/g, "<br>")),
     (hasBskyType(post.embed, "view") &&
         hasBskyType(post.embed.record, "viewRecord"))
       ? tag(
