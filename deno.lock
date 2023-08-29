@@ -1,20 +1,10 @@
 {
   "version": "2",
   "remote": {
-    "https://deno.land/std@0.192.0/_util/asserts.ts": "178dfc49a464aee693a7e285567b3d0b555dc805ff490505a8aae34f9cfb1462",
-    "https://deno.land/std@0.192.0/async/abortable.ts": "fd682fa46f3b7b16b4606a5ab52a7ce309434b76f820d3221bdfb862719a15d7",
-    "https://deno.land/std@0.192.0/async/deadline.ts": "58f72a3cc0fcb731b2cc055ba046f4b5be3349ff6bf98f2e793c3b969354aab2",
-    "https://deno.land/std@0.192.0/async/debounce.ts": "adab11d04ca38d699444ac8a9d9856b4155e8dda2afd07ce78276c01ea5a4332",
-    "https://deno.land/std@0.192.0/async/deferred.ts": "42790112f36a75a57db4a96d33974a936deb7b04d25c6084a9fa8a49f135def8",
-    "https://deno.land/std@0.192.0/async/delay.ts": "73aa04cec034c84fc748c7be49bb15cac3dd43a57174bfdb7a4aec22c248f0dd",
-    "https://deno.land/std@0.192.0/async/mod.ts": "f04344fa21738e5ad6bea37a6bfffd57c617c2d372bb9f9dcfd118a1b622e576",
-    "https://deno.land/std@0.192.0/async/mux_async_iterator.ts": "70c7f2ee4e9466161350473ad61cac0b9f115cff4c552eaa7ef9d50c4cbb4cc9",
-    "https://deno.land/std@0.192.0/async/pool.ts": "f1b8d3df4d7fd3c73f8cbc91cc2e8b8e950910f1eab94230b443944d7584c657",
-    "https://deno.land/std@0.192.0/async/retry.ts": "6521c061a5ab24e8b1ae624bdc581c4243d1d574f99dc7f5a2a195c2241fb1b8",
-    "https://deno.land/std@0.192.0/async/tee.ts": "47e42d35f622650b02234d43803d0383a89eb4387e1b83b5a40106d18ae36757",
-    "https://deno.land/std@0.192.0/http/server.ts": "1b23463b5b36e4eebc495417f6af47a6f7d52e3294827a1226d2a1aab23d9d20",
+    "https://deno.land/std@0.200.0/async/delay.ts": "a6142eb44cdd856b645086af2b811b1fcce08ec06bb7d50969e6a872ee9b8659",
+    "https://deno.land/std@0.200.0/http/server.ts": "1b2403b3c544c0624ad23e8ca4e05877e65380d9e0d75d04957432d65c3d5f41",
     "https://deno.land/x/markup_tag@0.4.0/mod.ts": "27ac5deb9f5dff3b99cb202b21c74315fa17c762e7009c6e223bbdc7c2f7061d",
-    "https://esm.sh/@atproto/api@0.3.12": "91eaefb6a9aed92e9ef0204df2fbda4331ed0201cc093b39c3741ebfd4379848",
-    "https://esm.sh/v126/@atproto/api@0.3.12/denonext/api.mjs": "0f6f4d1452402264f9c51c1bb9b850821d4fac3ef2a5f34db09148f2dd15eeda"
+    "https://esm.sh/@atproto/api@0.6.7": "dcec0c2663337f452309ee4b7b41d3a82ecb2b003f80c4f97bc14967fdf045fe",
+    "https://esm.sh/v131/@atproto/api@0.6.7/denonext/api.mjs": "1ff6dffc9835f513d21af5893aa7d57c338a8d6e470fd34504dad7ecef671182"
   }
 }
