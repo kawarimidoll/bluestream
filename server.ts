@@ -48,6 +48,12 @@ const identifier = Deno.env.get("BLUESKY_IDENTIFIER") || "";
 const password = Deno.env.get("BLUESKY_PASSWORD") || "";
 await agent.login({ identifier, password });
 
+function toUTCString(dateString?: string) {
+  if (!dateString) {
+    return "";
+  }
+  return (new Date(dateString)).toUTCString();
+}
 function getDidFromUri(uri: string) {
   return uri.replace(/^at:\/\//, "").replace(
     /\/app\.bsky\.feed.*$/,
@@ -236,7 +242,7 @@ serve(async (request: Request) => {
       }" rel="self" type="application/rss+xml" />`,
       tag("link", `https://bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
-      tag("lastBuildDate", feeds.at(0)?.post.record.createdAt || ""),
+      tag("lastBuildDate", toUTCString(feeds.at(0)?.post.record.createdAt)),
       ...feeds.map(({ post, reason, reply }) =>
         tag(
           "item",
@@ -251,7 +257,7 @@ serve(async (request: Request) => {
             { isPermaLink: "false" },
             post.uri + (hasBskyType(reason, "repost") ? "-repost" : ""),
           ),
-          tag("pubDate", post.record.createdAt),
+          tag("pubDate", toUTCString(post.record.createdAt)),
           tag("dc:creator", post.author.handle),
         )
       ),
