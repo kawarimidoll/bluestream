@@ -58,10 +58,8 @@ function uriToPostLink(uri: string, usePsky: boolean) {
     )
   }`;
 }
-function getEmbedImages(post?: AtoprotoAPI.AppBskyFeedDefs.PostView) {
-  return post?.embed && AppBskyEmbedImages.isMain(post.embed)
-    ? post.embed.images
-    : [];
+function getEmbedImages(post: AtoprotoAPI.AppBskyFeedDefs.PostView) {
+  return AppBskyEmbedImages.isView(post.embed) ? post.embed.images : [];
 }
 function genTitle(
   author: AppBskyActorDefs.ProfileViewDetailed,
@@ -123,12 +121,14 @@ function genMainContent(
     return [];
   }
 
+  const embedImages = getEmbedImages(post);
+  const imagesDiv = embedImages.length
+    ? tag("div", ...embedImages.map((image) => `<img src="${image.thumb}"/>`))
+    : "";
+
   return [
     "<![CDATA[",
-    tag(
-      "div",
-      ...getEmbedImages(post).map((image) => `<img src="${image.thumb}"/>`),
-    ),
+    imagesDiv,
     tag("p", sanitize(post.record.text).replace(/\n/g, "<br>")),
     (
         AppBskyEmbedRecord.isView(post.embed) &&
