@@ -4,17 +4,19 @@ import {
   tagNoVoid as tag,
 } from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
 
-import {
-  AppBskyActorDefs,
-  AppBskyEmbedImages,
+import AtoprotoAPI, { AppBskyActorDefs } from "npm:@atproto/api@0.6.10";
+const {
+  // AppBskyActorDefsをimportしていても一部でcannot find namespaceエラーが出る
+  // したがってエラーが出る箇所はAtoprotoAPI.AppBskyFeedDefsを使用する
+  // なぜかは不明
   AppBskyFeedDefs,
+  AppBskyEmbedImages,
+  AppBskyEmbedRecord,
+  AppBskyEmbedRecordWithMedia,
   AppBskyFeedPost,
   AppBskyRichtextFacet,
   BskyAgent,
-} from "npm:@atproto/api@0.6.7";
-type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
-type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
-type PostView = AppBskyFeedDefs.PostView;
+} = AtoprotoAPI;
 
 const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
 
@@ -26,20 +28,6 @@ if (isDev) {
       Deno.env.set(key, val);
     }
   });
-}
-
-const BSKY_TYPES = {
-  repost: "app.bsky.feed.defs#reasonRepost",
-  view: "app.bsky.embed.record#view",
-  viewRecord: "app.bsky.embed.record#viewRecord",
-  recordWithMedia: "app.bsky.embed.recordWithMedia#view",
-  mention: "app.bsky.richtext.facet#mention",
-};
-function hasBskyType(
-  record: { $type: string } | undefined,
-  type: keyof typeof BSKY_TYPES,
-) {
-  return record?.$type === BSKY_TYPES[type];
 }
 
 const service = "https://bsky.social";
@@ -70,29 +58,37 @@ function uriToPostLink(uri: string, usePsky: boolean) {
     )
   }`;
 }
-function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
+function getEmbedImages(post?: AtoprotoAPI.AppBskyFeedDefs.PostView) {
+  return post?.embed && AppBskyEmbedImages.isMain(post.embed)
+    ? post.embed.images
+    : [];
+}
+function genTitle(
+  author: AppBskyActorDefs.ProfileViewDetailed,
+  feed: AtoprotoAPI.AppBskyFeedDefs.FeedViewPost,
+) {
   const { handle } = author;
   const { post, reason, reply } = feed;
-  if (hasBskyType(reason, "repost")) {
+  if (AppBskyFeedDefs.isReasonRepost(reason)) {
     return `Repost by ${handle}, original by ${
       post.author?.handle || "unknown"
     }`;
   }
   let title = `Post by ${handle}`;
-  if (reply) {
+  if (AppBskyFeedPost.isReplyRef(reply)) {
     title = `${title}, reply to ${
       actors[getDidFromUri(reply.parent.uri)].handle
     }`;
   }
   if (post.embed) {
-    if (
-      hasBskyType(post.embed, "view") &&
-      hasBskyType(post.embed.record, "viewRecord")
-    ) {
+    if (AppBskyEmbedRecord.isViewRecord(post.embed.record)) {
       title = `${title}, quoting ${
         post.embed.record!.author?.handle || "unknown"
       }`;
-    } else if (hasBskyType(post.embed, "recordWithMedia")) {
+    } else if (
+      AppBskyEmbedRecordWithMedia.isView(post.embed) &&
+      AppBskyEmbedRecord.isViewRecord(post.embed.record.record)
+    ) {
       // NOTE: checking viewRecord may need here
       title = `${title}, quoting ${
         post.embed.record!.record!.author?.handle || "unknown"
@@ -102,30 +98,43 @@ function genTitle(author: ProfileViewDetailed, feed: FeedViewPost) {
   return title;
 }
 function genMainContent(
-  post: PostView,
+  post: AtoprotoAPI.AppBskyFeedDefs.PostView,
   usePsky: boolean,
   includeRepost: boolean,
 ) {
   if (usePsky) {
-    if (includeRepost && hasBskyType(post.embed, "view")) {
+    if (
+      includeRepost &&
+      AppBskyEmbedRecord.isView(post.embed) &&
+      AppBskyEmbedRecord.isViewRecord(post.embed.record)
+    ) {
       return ["[quote] ", uriToPostLink(post.embed.record.uri, usePsky)];
-    } else if (hasBskyType(post.embed, "recordWithMedia")) {
+    } else if (
+      AppBskyEmbedRecordWithMedia.isView(post.embed) &&
+      AppBskyEmbedRecord.isViewRecord(post.embed.record.record)
+    ) {
       return ["[quote] ", uriToPostLink(post.embed.record.record.uri, usePsky)];
     }
 
     return [];
   }
+
+  if (!AppBskyFeedPost.isRecord(post.record)) {
+    return [];
+  }
+
   return [
     "<![CDATA[",
     tag(
       "div",
-      ...(post.embed?.images || []).map((image: AppBskyEmbedImages.Main) =>
-        `<img src="${image.thumb}"/>`
-      ),
+      ...getEmbedImages(post).map((image) => `<img src="${image.thumb}"/>`),
     ),
     tag("p", sanitize(post.record.text).replace(/\n/g, "<br>")),
-    (hasBskyType(post.embed, "view") &&
-        hasBskyType(post.embed.record, "viewRecord"))
+    (
+        AppBskyEmbedRecord.isView(post.embed) &&
+        AppBskyEmbedRecord.isViewRecord(post.embed.record) &&
+        AppBskyFeedPost.isRecord(post.embed.record.value)
+      )
       ? tag(
         "p",
         "<br>[quote]<br>",
@@ -136,9 +145,11 @@ function genMainContent(
   ];
 }
 
-const actors: Record<string, ProfileViewDetailed> = {};
+const actors: Record<string, AppBskyActorDefs.ProfileViewDetailed> = {};
 
-async function getActor(handleOrDid: string): Promise<ProfileViewDetailed> {
+async function getActor(
+  handleOrDid: string,
+): Promise<AppBskyActorDefs.ProfileViewDetailed> {
   try {
     const did = handleOrDid.startsWith("did:plc:")
       ? handleOrDid
@@ -193,7 +204,8 @@ serve(async (request: Request) => {
       headers: { "content-type": "text/plain" },
     });
   }
-  const authorFeed: FeedViewPost[] = response.data.feed;
+  const authorFeed: AtoprotoAPI.AppBskyFeedDefs.FeedViewPost[] =
+    response.data.feed;
 
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
@@ -201,30 +213,32 @@ serve(async (request: Request) => {
   const excludeMention = searchParams.get("mention") === "exclude";
 
   const feeds = authorFeed.filter(({ post, reason }) => {
-    if (!includeRepost && hasBskyType(reason, "repost")) {
+    if (!includeRepost && AppBskyFeedDefs.isReasonRepost(reason)) {
       return false;
     }
-    const record: AppBskyFeedPost.Record = post?.record;
+    if (!AppBskyFeedPost.isRecord(post.record)) {
+      return false;
+    }
+    const record = post.record;
     if (excludeReply && !!record?.reply) return false;
     if (
       excludeMention &&
-      !!(record?.facets || []).some((facet: AppBskyRichtextFacet.Main) =>
-        (facet.features || []).some((feature: { $type: string }) =>
-          hasBskyType(feature, "mention")
+      (record?.facets || []).some((facet) =>
+        (facet.features || []).some((feature) =>
+          AppBskyRichtextFacet.isMention(feature)
         )
       )
     ) return false;
     return true;
   });
   for await (const feed of feeds) {
-    if (!feed.reply) {
-      continue;
+    if (AppBskyFeedPost.isReplyRef(feed.reply)) {
+      // store actors
+      await getActor(getDidFromUri(feed.reply.parent.uri));
     }
-    // store actors
-    await getActor(
-      getDidFromUri(feed.reply.parent.uri),
-    );
   }
+
+  const firstPost = feeds.at(0)?.post;
 
   const prefix = '<?xml version="1.0" encoding="UTF-8"?>';
   const res = tag(
@@ -243,22 +257,28 @@ serve(async (request: Request) => {
       }" rel="self" type="application/rss+xml" />`,
       tag("link", `https://bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${service}`),
-      tag("lastBuildDate", toUTCString(feeds.at(0)?.post.record.createdAt)),
+      AppBskyFeedDefs.isPostView(firstPost) &&
+        AppBskyFeedPost.isRecord(firstPost.record)
+        ? tag("lastBuildDate", toUTCString(firstPost.record.createdAt))
+        : "",
       ...feeds.map(({ post, reason, reply }) =>
         tag(
           "item",
           tag("title", genTitle({ did, handle }, { post, reason, reply })),
           tag("description", ...genMainContent(post, usePsky, includeRepost)),
-          ...(post.embed?.images || []).map((image: AppBskyEmbedImages.Main) =>
+          ...getEmbedImages(post).map((image) =>
             `<enclosure type="image/jpeg" length="0" url="${image.thumb}"/>`
           ).join(""),
           tag("link", uriToPostLink(post.uri, usePsky)),
           tag(
             "guid",
             { isPermaLink: "false" },
-            post.uri + (hasBskyType(reason, "repost") ? "-repost" : ""),
+            post.uri +
+              (AppBskyFeedDefs.isReasonRepost(reason) ? "-repost" : ""),
           ),
-          tag("pubDate", toUTCString(post.record.createdAt)),
+          AppBskyFeedPost.isRecord(post.record)
+            ? tag("pubDate", toUTCString(post.record.createdAt))
+            : "",
           tag("dc:creator", post.author.handle),
         )
       ),
