@@ -4,13 +4,14 @@ import {
   tagNoVoid as tag,
 } from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
 
-import BskyAgent, {
+import {
   AppBskyActorDefs,
   AppBskyEmbedImages,
   AppBskyFeedDefs,
   AppBskyFeedPost,
   AppBskyRichtextFacet,
-} from "https://esm.sh/@atproto/api@0.6.7";
+  BskyAgent,
+} from "npm:@atproto/api@0.6.7";
 type ProfileViewDetailed = AppBskyActorDefs.ProfileViewDetailed;
 type FeedViewPost = AppBskyFeedDefs.FeedViewPost;
 type PostView = AppBskyFeedDefs.PostView;
