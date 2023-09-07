@@ -69,7 +69,7 @@ function genTitle(
   const { post, reason, reply } = feed;
   if (AppBskyFeedDefs.isReasonRepost(reason)) {
     return `Repost by ${handle}, original by ${
-      post.author?.handle || "unknown"
+      post.author.handle || "unknown"
     }`;
   }
   let title = `Post by ${handle}`;
@@ -81,7 +81,7 @@ function genTitle(
   if (post.embed) {
     if (AppBskyEmbedRecord.isViewRecord(post.embed.record)) {
       title = `${title}, quoting ${
-        post.embed.record!.author?.handle || "unknown"
+        post.embed.record.author.handle || "unknown"
       }`;
     } else if (
       AppBskyEmbedRecordWithMedia.isView(post.embed) &&
@@ -89,7 +89,7 @@ function genTitle(
     ) {
       // NOTE: checking viewRecord may need here
       title = `${title}, quoting ${
-        post.embed.record!.record!.author?.handle || "unknown"
+        post.embed.record.record.author.handle || "unknown"
       }`;
     }
   }
@@ -138,7 +138,7 @@ function genMainContent(
       ? tag(
         "p",
         "<br>[quote]<br>",
-        sanitize(post.embed.record!.value?.text || "unknown"),
+        sanitize(post.embed.record.value.text || "unknown"),
       )
       : "",
     "]]>",
@@ -220,7 +220,7 @@ serve(async (request: Request) => {
       return false;
     }
     const record = post.record;
-    if (excludeReply && !!record?.reply) return false;
+    if (excludeReply && record.reply) return false;
     if (
       excludeMention &&
       (record?.facets || []).some((facet) =>
