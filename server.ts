@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import {
   sanitize,
   tagNoVoid as tag,
@@ -169,7 +168,7 @@ async function getActor(
   }
 }
 
-serve(async (request: Request) => {
+Deno.serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
   if (isDev) {
     console.log(pathname);

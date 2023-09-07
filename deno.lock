@@ -1,8 +1,6 @@
 {
   "version": "2",
   "remote": {
-    "https://deno.land/std@0.200.0/async/delay.ts": "a6142eb44cdd856b645086af2b811b1fcce08ec06bb7d50969e6a872ee9b8659",
-    "https://deno.land/std@0.200.0/http/server.ts": "1b2403b3c544c0624ad23e8ca4e05877e65380d9e0d75d04957432d65c3d5f41",
     "https://deno.land/x/markup_tag@0.4.0/mod.ts": "27ac5deb9f5dff3b99cb202b21c74315fa17c762e7009c6e223bbdc7c2f7061d"
   },
   "npm": {
