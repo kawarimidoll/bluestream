@@ -44,7 +44,7 @@ or
 
 `docker run -d -v /path/to/env/file/on/host/.env:/app/.env -p 8000:8000 bluestream:latest`
 
-You should be navigate to whatever port you exposed on the host for the container to access the server.
+You should be able navigate to whatever port you exposed on the host for the container to access the server.
 
 ## Author
 
