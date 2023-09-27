@@ -1,4 +1,8 @@
 {
+  "imports": {
+    "markup_tag":"https://deno.land/x/markup_tag@0.4.0/mod.ts",
+    "@atproto/api": "npm:@atproto/api@0.6.18"
+  },
   "tasks": {
     "ci": "deno lint && deno fmt",
     "dev": "deno run --allow-env=DENO_DEPLOYMENT_ID,BLUESKY_IDENTIFIER,BLUESKY_PASSWORD --allow-read=index.html,.env --allow-net=0.0.0.0,bsky.social --watch server.ts"
