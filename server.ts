@@ -3,7 +3,7 @@ import {
   tagNoVoid as tag,
 } from "https://deno.land/x/markup_tag@0.4.0/mod.ts";
 
-import AtoprotoAPI, { AppBskyActorDefs } from "npm:@atproto/api@0.6.10";
+import AtoprotoAPI, { AppBskyActorDefs } from "npm:@atproto/api@0.6.18";
 const {
   // AppBskyActorDefsをimportしていても一部でcannot find namespaceエラーが出る
   // したがってエラーが出る箇所はAtoprotoAPI.AppBskyFeedDefsを使用する
