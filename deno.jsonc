@@ -4,7 +4,14 @@
     "@atproto/api": "npm:@atproto/api@0.6.18"
   },
   "tasks": {
-    "ci": "deno lint && deno fmt",
-    "dev": "deno run --allow-env=DENO_DEPLOYMENT_ID,BLUESKY_IDENTIFIER,BLUESKY_PASSWORD --allow-read=index.html,.env --allow-net=0.0.0.0,bsky.social --watch server.ts"
+    // runner
+    "dev": "deno run --allow-env=DENO_DEPLOYMENT_ID,BLUESKY_IDENTIFIER,BLUESKY_PASSWORD --allow-read=index.html,.env --allow-net=0.0.0.0,bsky.social --watch server.ts",
+    // development
+    "test": "deno test --allow-env --allow-read --allow-net --allow-none",
+    "cov": "deno task test --coverage=cov_profile; deno coverage cov_profile",
+    "lint": "deno lint --ignore=cov_profile",
+    "fmt": "deno fmt --ignore=cov_profile",
+    "ci": "deno task lint && deno task fmt --check && deno task test",
+    "deps": "deno run --allow-read --allow-write --allow-net --allow-run https://deno.land/x/udd@0.8.2/main.ts --test='deno task test' deno.jsonc",
   }
 }
