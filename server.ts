@@ -121,25 +121,39 @@ function genMainContent(
   }
 
   const embedImages = getEmbedImages(post);
+  /* MAR: NO DIV tag */
+  const imagesDiv = "";
+  /*
   const imagesDiv = embedImages.length
     ? tag("div", ...embedImages.map((image) => `<img src="${image.thumb}"/>`))
     : "";
-
+  */
   return [
+    /* MAR: delete P tag */
     "<![CDATA[",
     imagesDiv,
+    sanitize(post.record.text),
+    (
+      AppBskyEmbedRecord.isView(post.embed) &&
+      AppBskyEmbedRecord.isViewRecord(post.embed.record) &&
+      AppBskyFeedPost.isRecord(post.embed.record.value)
+    )
+      ? "\n[quote] " + sanitize(post.embed.record.value.text || "unknown")
+      : "",
+    /*
     tag("p", sanitize(post.record.text).replace(/\n/g, "<br>")),
     (
-        AppBskyEmbedRecord.isView(post.embed) &&
-        AppBskyEmbedRecord.isViewRecord(post.embed.record) &&
-        AppBskyFeedPost.isRecord(post.embed.record.value)
-      )
+      AppBskyEmbedRecord.isView(post.embed) &&
+      AppBskyEmbedRecord.isViewRecord(post.embed.record) &&
+      AppBskyFeedPost.isRecord(post.embed.record.value)
+    )
       ? tag(
         "p",
         "<br>[quote]<br>",
         sanitize(post.embed.record.value.text || "unknown"),
       )
       : "",
+      */
     "]]>",
   ];
 }
