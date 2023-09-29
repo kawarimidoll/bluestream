@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/hook.sh"
+
+npx commitlint -x @commitlint/config-conventional -e "$1"
