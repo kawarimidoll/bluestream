@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/hook.sh"
+
+deno run --allow-read --allow-env --allow-run --allow-write https://pax.deno.dev/kawarimidoll/deno-dev-template@2.0.1/scripts/lint-staged.ts
