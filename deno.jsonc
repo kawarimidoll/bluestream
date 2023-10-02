@@ -1,5 +1,6 @@
 {
   "imports": {
+    "std/": "https://deno.land/std@0.203.0/",
     "markup_tag": "https://deno.land/x/markup_tag@0.4.0/mod.ts",
     "@atproto/api": "npm:@atproto/api@0.6.18"
   },
