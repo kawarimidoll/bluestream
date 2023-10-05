@@ -1,3 +1,6 @@
+import { login } from "./login.ts";
+import { BLUESKY_SERVICE, IS_DEV } from "./constants.ts";
+
 import { sanitize, tagNoVoid as tag } from "markup_tag";
 
 import AtoprotoAPI, { AppBskyActorDefs } from "@atproto/api";
@@ -11,27 +14,9 @@ const {
   AppBskyEmbedRecordWithMedia,
   AppBskyFeedPost,
   AppBskyRichtextFacet,
-  BskyAgent,
 } = AtoprotoAPI;
 
-const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
-
-if (isDev) {
-  const env = await Deno.readTextFile("./.env");
-  env.split("\n").forEach((line) => {
-    if (line) {
-      const [key, val] = line.split("=");
-      Deno.env.set(key, val);
-    }
-  });
-}
-
-const service = "https://bsky.social";
-const agent = new BskyAgent({ service });
-
-const identifier = Deno.env.get("BLUESKY_IDENTIFIER") || "";
-const password = Deno.env.get("BLUESKY_PASSWORD") || "";
-await agent.login({ identifier, password });
+const agent = await login();
 
 function toUTCString(dateString?: string) {
   if (!dateString) {
@@ -181,7 +166,7 @@ async function getActor(
 
 Deno.serve(async (request: Request) => {
   const { href, pathname, searchParams } = new URL(request.url);
-  if (isDev) {
+  if (IS_DEV) {
     console.log(pathname);
   }
 
@@ -266,7 +251,7 @@ Deno.serve(async (request: Request) => {
         sanitize(href)
       }" rel="self" type="application/rss+xml" />`,
       tag("link", `https://bsky.app/profile/${did}`),
-      tag("description", `${handle}'s posts in ${service}`),
+      tag("description", `${handle}'s posts in ${BLUESKY_SERVICE}`),
       AppBskyFeedDefs.isPostView(firstPost) &&
         AppBskyFeedPost.isRecord(firstPost.record)
         ? tag("lastBuildDate", toUTCString(firstPost.record.createdAt))
