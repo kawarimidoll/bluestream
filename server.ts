@@ -1,5 +1,6 @@
 import { login } from "./login.ts";
 import { BLUESKY_SERVICE, IS_DEV } from "./constants.ts";
+import { getDidFromUri, toUTCString, uriToPostLink } from "./utils.ts";
 
 import { sanitize, tagNoVoid as tag } from "markup_tag";
 
@@ -18,27 +19,6 @@ const {
 
 const agent = await login();
 
-function toUTCString(dateString?: string) {
-  if (!dateString) {
-    return "";
-  }
-  return (new Date(dateString)).toUTCString();
-}
-function getDidFromUri(uri: string) {
-  return uri.replace(/^at:\/\//, "").replace(
-    /\/app\.bsky\.feed.*$/,
-    "",
-  );
-}
-function uriToPostLink(uri: string, usePsky: boolean) {
-  const origin = usePsky ? "psky.app" : "bsky.app";
-  return `https://${origin}/profile/${
-    uri.replace(/^at:\/\//, "").replace(
-      /app\.bsky\.feed\./,
-      "",
-    )
-  }`;
-}
 function getEmbedImages(post: AtoprotoAPI.AppBskyFeedDefs.PostView) {
   return AppBskyEmbedImages.isView(post.embed) ? post.embed.images : [];
 }
