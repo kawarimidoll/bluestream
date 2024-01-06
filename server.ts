@@ -19,20 +19,6 @@ const {
 
 const agent = await login();
 
-// function getEmbedImages(
-//   post:
-//     | AtoprotoAPI.AppBskyFeedDefs.PostView
-//     | AtoprotoAPI.AppBskyEmbedRecord.ViewRecord,
-// ) {
-// if (AppBskyEmbedRecordWithMedia.isView(post)) return post.embed.media.images;
-// if (AppBskyEmbedImages.isView(post.embed)) return post.embed.images;
-// if (
-//   AtoprotoAPI.AppBskyEmbedRecord.isView(post) &&
-//   post.embeds instanceof Array
-// ) return post.embeds[0].images;
-//   return [];
-// }
-
 //post
 //reply.parent
 function getPost(
