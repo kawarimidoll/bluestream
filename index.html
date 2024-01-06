@@ -40,12 +40,22 @@
         </div>
         <div>
           <label>
+            <input type="checkbox" id="include-reply-context" name="include-reply-context" aria-label="include-reply-context" /> include reply context (the post replied to)
+          </label>
+        </div>
+        <div>
+          <label>
             <input type="checkbox" id="exclude-reply" name="exclude-reply" aria-label="exclude-reply" /> exclude reply (the post reply to the other post)
           </label>
         </div>
         <div>
           <label>
             <input type="checkbox" id="exclude-mention" name="exclude-mention" aria-label="exclude-mention" /> exclude mention (the post that contains <code>@someone</code>)
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" id="media-full" name="media-full" aria-label="media-full" /> Show full resolution media (uses more data)
           </label>
         </div>
         <div>
@@ -77,8 +87,14 @@
       if (document.getElementById("exclude-reply").checked) {
         url.searchParams.set("reply", "exclude");
       }
+      if (document.getElementById("include-reply-context").checked) {
+        url.searchParams.set("reply-context", "include");
+      }
       if (document.getElementById("exclude-mention").checked) {
         url.searchParams.set("mention", "exclude");
+      }
+      if (document.getElementById("media-full").checked) {
+        url.searchParams.set("media", "full");
       }
       if (document.getElementById("link-psky").checked) {
         url.searchParams.set("link", "psky");
