@@ -36,8 +36,7 @@ function getPost(
   //FIXME: its not including media in replies
   const media = (
       //if post with media
-      AppBskyEmbedImages.isView(post.embed) &&
-      AppBskyEmbedImages.isViewImage(post.embed.images)
+      AppBskyEmbedImages.isView(post.embed)
     )
     ? post.embed.images
     : (
@@ -52,13 +51,16 @@ function getPost(
     ? tag(
       "div",
       ...media.map((image) => {
-       return tag("figure", `<img src="${
-          fullMedia ? image.fullsize : image.thumb
-        }"/><figcaption>${image.alt}</figcaption>`,"<br>");
+        return tag(
+          "figure",
+          `<img src="${
+            fullMedia ? image.fullsize : image.thumb
+          }"/><figcaption>${image.alt}</figcaption>`,
+          "<br>",
+        );
       }),
     )
     : "";
-   if(media.length > 0){console.log(post.uri, mediastr)}
   return {
     author: author,
     uri: post.uri,
@@ -84,7 +86,6 @@ function getQuotePost(
     : (
         //Media post with quoted post with media
         AppBskyEmbedRecordWithMedia.isView(post.embed) &&
-        AppBskyEmbedRecord.isView(post.embed.record) &&
         AppBskyEmbedRecord.isViewRecord(post.embed.record.record)
       )
     ? post.embed.record.record
@@ -101,7 +102,7 @@ function getQuotePost(
       quotePost.embeds.forEach((embed) => {
         if (AppBskyEmbedImages.isView(embed)) {
           embed.images.forEach((image) => {
-            if (AppBskyEmbedImages.isViewImage(image)) media.push(image);
+            media.push(image);
           });
         }
       });
