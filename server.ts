@@ -184,12 +184,10 @@ function genTitle(
 ) {
   const { handle } = author;
   const { post, reason, reply } = feed;
-  if (AppBskyFeedDefs.isReasonRepost(reason)) {
-    return `Repost by ${handle}, original by ${
-      post.author.handle || "unknown"
-    }`;
-  }
   let title = `Post by ${handle}`;
+  if (AppBskyFeedDefs.isReasonRepost(reason)) {
+    title = `Repost from ${handle}, post by ${post.author.handle || "unknown"}`;
+  }
   if (isReplyRef(reply) && isProfileViewBasic(reply.parent.author)) {
     title = `${title}, reply to ${reply.parent.author.handle || "unknown"}`;
   }
@@ -236,7 +234,15 @@ function genMainContent(
   return [
     "<![CDATA[",
     post.media,
-    tag("p", post.text),
+    tag(
+      "p",
+      `<b>${sanitize(post.author.displayName || "")}</b> <i>@${
+        post.author.handle || "unknown"
+      }</i> <a href="${uriToPostLink(post.uri, usePsky)}">${
+        (post.isReply) ? "replied" : "posted"
+      }</a>:<br>`,
+      post.text,
+    ),
     (post.quote)
       ? tag(
         "p",
@@ -255,7 +261,9 @@ function genMainContent(
         "<hr><hr>",
         `<b>${sanitize(reply.author.displayName || "")}</b> <i>@${
           reply.author.handle || "unknown"
-        }</i> <a href="${uriToPostLink(reply.uri, usePsky)}">${(reply.isReply) ? "replied" : "posted"}</a>:<br>`,
+        }</i> <a href="${uriToPostLink(reply.uri, usePsky)}">${
+          (reply.isReply) ? "replied" : "posted"
+        }</a>:<br>`,
         reply.media,
         tag("p", reply.text),
         (reply.quote)
