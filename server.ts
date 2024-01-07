@@ -19,21 +19,20 @@ const {
 
 const agent = await login();
 
-//post
-//reply.parent
 function getPost(
   post: AtoprotoAPI.AppBskyFeedDefs.PostView,
   fullMedia = false,
 ) {
   const author = post.author;
 
-  //don't forget to sanitise text into html entities so that it is rendered correctly
-  //try not to sanitise urls tho
   const text = (AppBskyFeedPost.isRecord(post.record))
     ? processText(post.record)
     : "";
 
-  //FIXME: its not including media in replies
+  const isReply = (AppBskyFeedPost.isRecord(post.record) && post.record.reply)
+    ? true
+    : false;
+
   const media = (
       //if post with media
       AppBskyEmbedImages.isView(post.embed)
@@ -65,14 +64,13 @@ function getPost(
     author: author,
     uri: post.uri,
     text: text,
+    isReply: isReply,
     mediaarr: media,
     media: mediastr,
     quote: getQuotePost(post, fullMedia),
   };
 }
 
-//post
-//reply.parent
 function getQuotePost(
   post: AtoprotoAPI.AppBskyFeedDefs.PostView,
   fullMedia = false,
@@ -96,6 +94,10 @@ function getQuotePost(
     const text = (AtoprotoAPI.AppBskyFeedPost.isRecord(quotePost.value))
       ? processText(quotePost.value)
       : "";
+    const isReply =
+      (AppBskyFeedPost.isRecord(quotePost.value) && quotePost.value.reply)
+        ? true
+        : false;
 
     const media: AtoprotoAPI.AppBskyEmbedImages.ViewImage[] = [];
     if (quotePost.embeds) {
@@ -124,6 +126,7 @@ function getQuotePost(
       author: author,
       text: text,
       media: mediastr,
+      isReply: isReply,
     };
   } else return undefined;
 }
@@ -175,10 +178,6 @@ function isProfileViewBasic(
     Object.hasOwn(v, "handle");
 }
 
-//Repost by user1, original by user2
-//Post by user1
-//Post by user1, quoting user2
-//Post by user1, reply to user2, quoting user3
 function genTitle(
   author: AppBskyActorDefs.ProfileViewDetailed,
   feed: AtoprotoAPI.AppBskyFeedDefs.FeedViewPost,
@@ -223,7 +222,6 @@ function genMainContent(
     ? getPost(feed.reply.parent, fullMedia)
     : undefined;
 
-  //used for embedded link preview (Eg for chats like discord / telegram)
   if (usePsky) {
     if (
       includeRepost &&
@@ -244,7 +242,9 @@ function genMainContent(
         "p",
         `<br>[quote]<br><b>${
           sanitize(post.quote.author.displayName || "")
-        }</b> <i>@${post.quote.author.handle || "unknown"}</i> posted:<br>`,
+        }</b> <i>@${post.quote.author.handle || "unknown"}</i> <a href="${
+          uriToPostLink(post.quote.uri, usePsky)
+        }">${(post.quote.isReply) ? "replied" : "posted"}</a>:<br>`,
         post.quote.media,
         tag("p", post.quote.text),
       )
@@ -253,21 +253,19 @@ function genMainContent(
       ? tag(
         "p",
         "<hr><hr>",
-        //changed "posted" to the post type (posted / replied)
         `<b>${sanitize(reply.author.displayName || "")}</b> <i>@${
           reply.author.handle || "unknown"
-        }</i> posted:<br>`,
+        }</i> <a href="${uriToPostLink(reply.uri, usePsky)}">${(reply.isReply) ? "replied" : "posted"}</a>:<br>`,
         reply.media,
         tag("p", reply.text),
         (reply.quote)
           ? tag(
             "p",
-            //changed "posted" to the post type (posted / replied)
             `<br>[quote]<br><b>${
               sanitize(reply.quote.author.displayName || "")
-            }</b> <i>@${
-              reply.quote.author.handle || "unknown"
-            }</i> posted:<br>`,
+            }</b> <i>@${reply.quote.author.handle || "unknown"}</i> <a href="${
+              uriToPostLink(reply.quote.uri, usePsky)
+            }">${(reply.quote.isReply) ? "replied" : "posted"}</a>:<br>`,
             reply.quote.media,
             tag("p", reply.quote.text),
           )
@@ -307,9 +305,6 @@ Deno.serve(async (request: Request) => {
   if (IS_DEV) {
     console.log(pathname);
   }
-  // const aaa = await agent.api.app.bsky.feed.getPosts({uris: ["at://did:plc:bw35mx7zohkm3fmtxtixidbz/app.bsky.feed.post/3ki7ijwwybo2d", "at://did:plc:bw35mx7zohkm3fmtxtixidbz/app.bsky.feed.post/3ki7ir64mo22m"]});
-
-  // return new Response (JSON.stringify(aaa));
 
   if (pathname === "/") {
     const file = await Deno.readFile("./index.html");
@@ -342,8 +337,6 @@ Deno.serve(async (request: Request) => {
   }
   const authorFeed: AtoprotoAPI.AppBskyFeedDefs.FeedViewPost[] =
     response.data.feed;
-
-  // return new Response(JSON.stringify(authorFeed), {headers: { "content-type": "application/json" },});
 
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
