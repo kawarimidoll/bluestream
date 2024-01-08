@@ -309,7 +309,7 @@ async function getActor(
 }
 
 Deno.serve(async (request: Request) => {
-  const { href, pathname, searchParams } = new URL(request.url);
+  const { pathname, searchParams, origin, search } = new URL(request.url);
   if (IS_DEV) {
     console.log(pathname);
   }
@@ -333,6 +333,10 @@ Deno.serve(async (request: Request) => {
     return new Response("Unable to resolve handle", {
       headers: { "content-type": "text/plain" },
     });
+  }
+
+  if (!pathname.startsWith("/did:plc:")) {
+    return Response.redirect(origin + "/" + did + search);
   }
 
   const response = await agent.api.app.bsky.feed.getAuthorFeed({
@@ -388,7 +392,7 @@ Deno.serve(async (request: Request) => {
       "channel",
       tag("title", `Bluestream (${handle})`),
       `<atom:link href="${
-        sanitize(href)
+        sanitize(origin + "/" + did + search)
       }" rel="self" type="application/rss+xml" />`,
       tag("link", `https://bsky.app/profile/${did}`),
       tag("description", `${handle}'s posts in ${BLUESKY_SERVICE}`),
