@@ -341,7 +341,7 @@ async function getActor(
   }
 }
 
-Deno.serve(async (request: Request) => {
+Deno.serve({ port: 2378 }, async (request: Request) => {
   const { pathname, searchParams, origin, search } = new URL(request.url);
   if (IS_DEV) {
     console.log(pathname);
