@@ -60,6 +60,11 @@
         </div>
         <div>
           <label>
+            <input type="checkbox" id="include-embed-preview" name="include-embed-preview" aria-label="include-embed-preview" /> include link embed preview
+          </label>
+        </div>
+        <div>
+          <label>
             <input type="checkbox" id="link-psky" name="link-psky" aria-label="link-psky" /> Use psky.app for link (EXPERIMENTAL, this is useful for embed)
           </label>
         </div>
@@ -98,6 +103,10 @@
       }
       if (document.getElementById("link-psky").checked) {
         url.searchParams.set("link", "psky");
+      }
+
+      if (document.getElementById("include-embed-preview").checked) {
+        url.searchParams.set("embed-preview", "include");
       }
       window.location.href = url.toString();
     });

@@ -15,6 +15,7 @@ const {
   AppBskyEmbedRecordWithMedia,
   AppBskyFeedPost,
   AppBskyRichtextFacet,
+  AppBskyEmbedExternal,
 } = AtoprotoAPI;
 
 const agent = await login();
@@ -22,7 +23,14 @@ const agent = await login();
 function getPost(
   post: AtoprotoAPI.AppBskyFeedDefs.PostView,
   fullMedia = false,
+  includeEmbed = false,
 ) {
+  const embedstr = (
+      AppBskyEmbedExternal.isView(post.embed) && includeEmbed
+    )
+    ? processExternal(post.embed.external)
+    : "";
+
   const author = post.author;
 
   const text = (AppBskyFeedPost.isRecord(post.record))
@@ -60,6 +68,7 @@ function getPost(
       }),
     )
     : "";
+
   return {
     author: author,
     uri: post.uri,
@@ -67,13 +76,15 @@ function getPost(
     isReply: isReply,
     mediaarr: media,
     media: mediastr,
-    quote: getQuotePost(post, fullMedia),
+    quote: getQuotePost(post, fullMedia, includeEmbed),
+    embed: embedstr,
   };
 }
 
 function getQuotePost(
   post: AtoprotoAPI.AppBskyFeedDefs.PostView,
   fullMedia = false,
+  includeEmbed = false,
 ) {
   const quotePost = (
       //Text-only post with Quoted post with media
@@ -99,21 +110,32 @@ function getQuotePost(
         ? true
         : false;
 
-    const media: AtoprotoAPI.AppBskyEmbedImages.ViewImage[] = [];
+    const medias: AtoprotoAPI.AppBskyEmbedImages.ViewImage[] = [];
+    let embedstr = "";
     if (quotePost.embeds) {
       quotePost.embeds.forEach((embed) => {
+        if (
+          AppBskyEmbedExternal.isView(embed) && includeEmbed
+        ) {
+          embedstr += processExternal(embed.external);
+        } 
+
+        if (AppBskyEmbedRecordWithMedia.isView(embed)) {
+          embed = embed.media;
+        }
+
         if (AppBskyEmbedImages.isView(embed)) {
           embed.images.forEach((image) => {
-            media.push(image);
+            medias.push(image);
           });
         }
       });
     }
 
-    const mediastr = (media.length > 0)
+    const mediastr = (medias.length > 0)
       ? tag(
         "div",
-        ...media.map((image) =>
+        ...medias.map((image) =>
           `<figure><img src="${
             fullMedia ? image.fullsize : image.thumb
           }"/><figcaption>${image.alt}</figcaption></figure>`
@@ -127,6 +149,7 @@ function getQuotePost(
       text: text,
       media: mediastr,
       isReply: isReply,
+      embed: embedstr,
     };
   } else return undefined;
 }
@@ -162,6 +185,15 @@ function processText(
     });
   }
   return text;
+}
+
+function processExternal(
+  external: AtoprotoAPI.AppBskyEmbedExternal.ViewExternal,
+) {
+  const imgstr = (external.thumb) ? `<img src="${external.thumb}"/><br>` : "";
+  return `<figure><figcaption><a href="${external.uri}"><b>${external.title}</b></a></figcaption><blockquote>${imgstr}(${
+    new URL(external.uri).hostname
+  }) ${external.description}</blockquote></figure>`;
 }
 
 // $typeが含まれていないので正常に判定できないものを自前実装
@@ -214,10 +246,11 @@ function genMainContent(
   includeRepost: boolean,
   fullMedia: boolean,
   replyContext: boolean,
+  includeEmbed: boolean,
 ) {
-  const post = getPost(feed.post, fullMedia);
+  const post = getPost(feed.post, fullMedia, includeEmbed);
   const reply = (AppBskyFeedDefs.isPostView(feed.reply?.parent))
-    ? getPost(feed.reply.parent, fullMedia)
+    ? getPost(feed.reply.parent, fullMedia, includeEmbed)
     : undefined;
 
   if (usePsky) {
@@ -233,31 +266,31 @@ function genMainContent(
 
   return [
     "<![CDATA[",
-    post.media,
     tag(
-      "p",
+      "div",
       `<b>${sanitize(post.author.displayName || "")}</b> <i>@${
         post.author.handle || "unknown"
       }</i> <a href="${uriToPostLink(post.uri, usePsky)}">${
         (post.isReply) ? "replied" : "posted"
       }</a>:<br>`,
-      post.text,
+      post.media,
+      tag("p", post.text, post.embed),
     ),
     (post.quote)
       ? tag(
-        "p",
+        "div",
         `<br>[quote]<br><b>${
           sanitize(post.quote.author.displayName || "")
         }</b> <i>@${post.quote.author.handle || "unknown"}</i> <a href="${
           uriToPostLink(post.quote.uri, usePsky)
         }">${(post.quote.isReply) ? "replied" : "posted"}</a>:<br>`,
+        tag("p", post.quote.text, post.quote.embed),
         post.quote.media,
-        tag("p", post.quote.text),
       )
       : "",
     (replyContext && reply)
       ? tag(
-        "p",
+        "div",
         "<hr><hr>",
         `<b>${sanitize(reply.author.displayName || "")}</b> <i>@${
           reply.author.handle || "unknown"
@@ -265,17 +298,17 @@ function genMainContent(
           (reply.isReply) ? "replied" : "posted"
         }</a>:<br>`,
         reply.media,
-        tag("p", reply.text),
+        tag("p", reply.text, reply.embed),
         (reply.quote)
           ? tag(
-            "p",
+            "div",
             `<br>[quote]<br><b>${
               sanitize(reply.quote.author.displayName || "")
             }</b> <i>@${reply.quote.author.handle || "unknown"}</i> <a href="${
               uriToPostLink(reply.quote.uri, usePsky)
             }">${(reply.quote.isReply) ? "replied" : "posted"}</a>:<br>`,
             reply.quote.media,
-            tag("p", reply.quote.text),
+            tag("p", reply.quote.text, reply.quote.embed),
           )
           : "",
       )
@@ -308,7 +341,7 @@ async function getActor(
   }
 }
 
-Deno.serve(async (request: Request) => {
+Deno.serve({ port: 2378 }, async (request: Request) => {
   const { pathname, searchParams, origin, search } = new URL(request.url);
   if (IS_DEV) {
     console.log(pathname);
@@ -350,12 +383,15 @@ Deno.serve(async (request: Request) => {
   const authorFeed: AtoprotoAPI.AppBskyFeedDefs.FeedViewPost[] =
     response.data.feed;
 
+  // return new Response(JSON.stringify(response),{headers:{"content-type":"application/json"}});
+
   const usePsky = searchParams.get("link") === "psky";
   const includeRepost = searchParams.get("repost") === "include";
   const replyContext = searchParams.get("reply-context") === "include";
   const excludeReply = searchParams.get("reply") === "exclude";
   const excludeMention = searchParams.get("mention") === "exclude";
   const fullMedia = searchParams.get("media") === "full";
+  const includeEmbed = searchParams.get("embed-preview") === "include";
 
   const feeds = authorFeed.filter(({ post, reason }) => {
     if (!includeRepost && AppBskyFeedDefs.isReasonRepost(reason)) {
@@ -412,6 +448,7 @@ Deno.serve(async (request: Request) => {
               includeRepost,
               fullMedia,
               replyContext,
+              includeEmbed,
             ),
           ),
           ...getPost(post).mediaarr.map((image) =>
