@@ -190,10 +190,10 @@ function processText(
 function processExternal(
   external: AtoprotoAPI.AppBskyEmbedExternal.ViewExternal,
 ) {
-  const imgstr = (external.thumb) ? `<img src="${external.thumb}"/><br>` : "";
-  return `<figure><figcaption><a href="${external.uri}"><b>${external.title}</b></a></figcaption><blockquote>${imgstr}(${
+  const imgstr = (external.thumb) ? `<img src="${external.thumb}"/>` : "";
+  return `<blockquote><a href="${external.uri}"><b>${external.title}</b></a><figure>${imgstr}<figcaption>(${
     new URL(external.uri).hostname
-  }) ${external.description}</blockquote></figure>`;
+  }) ${external.description}</figcaption></figure></blockquote>`;
 }
 
 // $typeが含まれていないので正常に判定できないものを自前実装
