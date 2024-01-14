@@ -37,9 +37,7 @@ function getPost(
     ? processText(post.record)
     : "";
 
-  const isReply = (AppBskyFeedPost.isRecord(post.record) && post.record.reply)
-    ? true
-    : false;
+  const isReply = AppBskyFeedPost.isRecord(post.record) && post.record.reply;
 
   const media = (
       //if post with media
@@ -60,10 +58,12 @@ function getPost(
       ...media.map((image) => {
         return tag(
           "figure",
-          `<img src="${
-            fullMedia ? image.fullsize : image.thumb
-          }"/><figcaption>${image.alt}</figcaption>`,
-          "<br>",
+          tag(
+            "img",
+            { src: fullMedia ? image.fullsize : image.thumb },
+            tag("figcaption", image.alt),
+            tag("br"),
+          ),
         );
       }),
     )
@@ -100,58 +100,61 @@ function getQuotePost(
     ? post.embed.record.record
     : undefined;
 
-  if (quotePost) {
-    const author = quotePost.author;
-    const text = (AtoprotoAPI.AppBskyFeedPost.isRecord(quotePost.value))
-      ? processText(quotePost.value)
-      : "";
-    const isReply =
-      (AppBskyFeedPost.isRecord(quotePost.value) && quotePost.value.reply)
-        ? true
-        : false;
+  if (!quotePost) return undefined;
+  const author = quotePost.author;
+  const text = (AtoprotoAPI.AppBskyFeedPost.isRecord(quotePost.value))
+    ? processText(quotePost.value)
+    : "";
+  const isReply = AppBskyFeedPost.isRecord(quotePost.value) &&
+    quotePost.value.reply;
 
-    const medias: AtoprotoAPI.AppBskyEmbedImages.ViewImage[] = [];
-    let embedstr = "";
-    if (quotePost.embeds) {
-      quotePost.embeds.forEach((embed) => {
-        if (
-          AppBskyEmbedExternal.isView(embed) && includeEmbed
-        ) {
-          embedstr += processExternal(embed.external);
-        } 
+  const medias: AtoprotoAPI.AppBskyEmbedImages.ViewImage[] = [];
+  let embedstr = "";
+  if (quotePost.embeds) {
+    quotePost.embeds.forEach((embed) => {
+      if (
+        AppBskyEmbedExternal.isView(embed) && includeEmbed
+      ) {
+        embedstr += processExternal(embed.external);
+      }
 
-        if (AppBskyEmbedRecordWithMedia.isView(embed)) {
-          embed = embed.media;
-        }
+      if (AppBskyEmbedRecordWithMedia.isView(embed)) {
+        embed = embed.media;
+      }
 
-        if (AppBskyEmbedImages.isView(embed)) {
-          embed.images.forEach((image) => {
-            medias.push(image);
-          });
-        }
-      });
-    }
+      if (AppBskyEmbedImages.isView(embed)) {
+        embed.images.forEach((image) => {
+          medias.push(image);
+        });
+      }
+    });
+  }
 
-    const mediastr = (medias.length > 0)
-      ? tag(
-        "div",
-        ...medias.map((image) =>
-          `<figure><img src="${
-            fullMedia ? image.fullsize : image.thumb
-          }"/><figcaption>${image.alt}</figcaption></figure>`
-        ),
-      )
-      : "";
+  const mediastr = (medias.length > 0)
+    ? tag(
+      "div",
+      ...medias.map((image) => {
+        return tag(
+          "figure",
+          tag(
+            "img",
+            { src: fullMedia ? image.fullsize : image.thumb },
+            tag("figcaption", image.alt),
+            tag("br"),
+          ),
+        );
+      }),
+    )
+    : "";
 
-    return {
-      uri: quotePost.uri,
-      author: author,
-      text: text,
-      media: mediastr,
-      isReply: isReply,
-      embed: embedstr,
-    };
-  } else return undefined;
+  return {
+    uri: quotePost.uri,
+    author: author,
+    text: text,
+    media: mediastr,
+    isReply: isReply,
+    embed: embedstr,
+  };
 }
 
 function processText(
@@ -190,10 +193,19 @@ function processText(
 function processExternal(
   external: AtoprotoAPI.AppBskyEmbedExternal.ViewExternal,
 ) {
-  const imgstr = (external.thumb) ? `<img src="${external.thumb}"/>` : "";
-  return `<blockquote><a href="${external.uri}"><b>${external.title}</b></a><figure>${imgstr}<figcaption>(${
-    new URL(external.uri).hostname
-  }) ${external.description}</figcaption></figure></blockquote>`;
+  const imgstr = (external.thumb) ? tag("img", { src: external.thumb }) : "";
+  return tag(
+    "blockquote",
+    tag("a", { href: external.uri }, tag("b", external.title)),
+    tag(
+      "figure",
+      imgstr,
+      tag(
+        "figcaption",
+        `(${new URL(external.uri).hostname}) ${external.description}`,
+      ),
+    ),
+  );
 }
 
 // $typeが含まれていないので正常に判定できないものを自前実装
@@ -268,22 +280,29 @@ function genMainContent(
     "<![CDATA[",
     tag(
       "div",
-      `<b>${sanitize(post.author.displayName || "")}</b> <i>@${
-        post.author.handle || "unknown"
-      }</i> <a href="${uriToPostLink(post.uri, usePsky)}">${
-        (post.isReply) ? "replied" : "posted"
-      }</a>:<br>`,
-      post.media,
+      tag("b", sanitize(post.author.displayName || ""), " "),
+      tag("i", `@${post.author.handle || "unknown"} `),
+      tag(
+        "a",
+        { href: uriToPostLink(post.uri, usePsky) },
+        post.isReply ? "replied" : "posted",
+      ),
+      ":<br>",
       tag("p", post.text, post.embed),
+      post.media,
     ),
     (post.quote)
       ? tag(
         "div",
-        `<br>[quote]<br><b>${
-          sanitize(post.quote.author.displayName || "")
-        }</b> <i>@${post.quote.author.handle || "unknown"}</i> <a href="${
-          uriToPostLink(post.quote.uri, usePsky)
-        }">${(post.quote.isReply) ? "replied" : "posted"}</a>:<br>`,
+        `<br>[quote]<br>`,
+        tag("b", sanitize(post.quote.author.displayName || "")),
+        tag("i", `@${post.quote.author.handle || "unknown"} `),
+        tag(
+          "a",
+          { href: uriToPostLink(post.quote.uri, usePsky) },
+          post.quote.isReply ? "replied" : "posted",
+        ),
+        ":<br>",
         tag("p", post.quote.text, post.quote.embed),
         post.quote.media,
       )
@@ -291,24 +310,30 @@ function genMainContent(
     (replyContext && reply)
       ? tag(
         "div",
-        "<hr><hr>",
-        `<b>${sanitize(reply.author.displayName || "")}</b> <i>@${
-          reply.author.handle || "unknown"
-        }</i> <a href="${uriToPostLink(reply.uri, usePsky)}">${
-          (reply.isReply) ? "replied" : "posted"
-        }</a>:<br>`,
-        reply.media,
+        "<hr>",
+        tag("b", sanitize(reply.author.displayName || ""), " "),
+        tag("i", `@${reply.author.handle || "unknown"} `),
+        tag(
+          "a",
+          { href: uriToPostLink(reply.uri, usePsky) },
+          reply.isReply ? "replied" : "posted",
+        ),
+        ":<br>",
         tag("p", reply.text, reply.embed),
+        reply.media,
         (reply.quote)
           ? tag(
             "div",
-            `<br>[quote]<br><b>${
-              sanitize(reply.quote.author.displayName || "")
-            }</b> <i>@${reply.quote.author.handle || "unknown"}</i> <a href="${
-              uriToPostLink(reply.quote.uri, usePsky)
-            }">${(reply.quote.isReply) ? "replied" : "posted"}</a>:<br>`,
-            reply.quote.media,
+            `<br>[quote]<br>`,
+            tag("b", sanitize(reply.quote.author.displayName || "")),
+            tag("i", `@${reply.quote.author.handle || "unknown"} `),
+            tag(
+              "a",
+              { href: uriToPostLink(reply.quote.uri, usePsky) },
+              reply.quote.isReply ? "replied" : "posted",
+            ),
             tag("p", reply.quote.text, reply.quote.embed),
+            reply.quote.media,
           )
           : "",
       )
