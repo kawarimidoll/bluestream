@@ -332,6 +332,7 @@ function genMainContent(
               { href: uriToPostLink(reply.quote.uri, usePsky) },
               reply.quote.isReply ? "replied" : "posted",
             ),
+            ":<br>",
             tag("p", reply.quote.text, reply.quote.embed),
             reply.quote.media,
           )
