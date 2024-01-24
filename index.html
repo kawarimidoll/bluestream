@@ -40,17 +40,32 @@
         </div>
         <div>
           <label>
-            <input type="checkbox" id="exclude-reply" name="exclude-reply" aria-label="exclude-reply" /> exclude reply (the post reply to the other post)
+            <input type="checkbox" id="include-reply-context" name="include-reply-context" aria-label="include-reply-context" /> include replied to context (the post replied to)
           </label>
         </div>
         <div>
           <label>
-            <input type="checkbox" id="exclude-mention" name="exclude-mention" aria-label="exclude-mention" /> exclude mention (the post that contains <code>@someone</code>)
+            <input type="checkbox" id="exclude-reply" name="exclude-reply" aria-label="exclude-reply" /> exclude reply posts (posts replying to another)
           </label>
         </div>
         <div>
           <label>
-            <input type="checkbox" id="link-psky" name="link-psky" aria-label="link-psky" /> Use psky.app for link (EXPERIMENTAL, this is useful for embed)
+            <input type="checkbox" id="exclude-mention" name="exclude-mention" aria-label="exclude-mention" /> exclude mention (the post that contains <code>@handle</code>)
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" id="media-full" name="media-full" aria-label="media-full" /> show full media instead of thumbnail (uses more data)
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" id="include-embed-preview" name="include-embed-preview" aria-label="include-embed-preview" /> include embedded link preview
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" id="link-psky" name="link-psky" aria-label="link-psky" /> Use psky.app for link (EXPERIMENTAL, useful for readers with link previews)
           </label>
         </div>
       </div>
@@ -77,11 +92,21 @@
       if (document.getElementById("exclude-reply").checked) {
         url.searchParams.set("reply", "exclude");
       }
+      if (document.getElementById("include-reply-context").checked) {
+        url.searchParams.set("reply-context", "include");
+      }
       if (document.getElementById("exclude-mention").checked) {
         url.searchParams.set("mention", "exclude");
       }
+      if (document.getElementById("media-full").checked) {
+        url.searchParams.set("media", "full");
+      }
       if (document.getElementById("link-psky").checked) {
         url.searchParams.set("link", "psky");
+      }
+
+      if (document.getElementById("include-embed-preview").checked) {
+        url.searchParams.set("embed-preview", "include");
       }
       window.location.href = url.toString();
     });
