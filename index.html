@@ -19,11 +19,26 @@
     input {
       display: inline;
     }
+    #notice {
+      border: thick double;
+    }
   </style>
 </head>
 
 <body>
   <h1>Bluestream</h1>
+  <div id="notice">
+    <p>💡 NOTICE 💡</p>
+    <p>Thank you for accessing this project.</p>
+    <p>
+      Because this is used by a large number of users,<br>
+      it may stop due to Deno Deploy quota limit.
+    </p>
+    <p>
+      If you want to recieve RSS feed of your posts, you can use official RSS:<br>
+      https://bsky.app/profile/<strong>bsky-handle</strong>/rss
+    </p>
+  </div>
   <div>
     <p>RSS feed generator for Bluesky.</p>
     <p>Access to the path /bsky-handle directory or input handle of Bluesky here ↓</p>
