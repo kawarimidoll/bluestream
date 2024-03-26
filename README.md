@@ -1,3 +1,13 @@
+> [!IMPORTANT]
+>
+> Thank you for accessing this project.
+>
+> Because this is used by a large number of users, it may stop due to Deno
+> Deploy quota limit.
+>
+> If you want to recieve RSS feed of your posts, you can use official RSS:
+> `https://bsky.app/profile/__bsky-handle__/rss`
+
 # Bluestream
 
 RSS feed generator for [Bluesky](https://bsky.app).
