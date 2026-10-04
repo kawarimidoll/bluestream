@@ -228,9 +228,12 @@ function genTitle(
 ) {
   const { handle } = author;
   const { post, reason, reply } = feed;
-  let title = `Post by ${handle}`;
+
+  const postData = getPost(feed.post);
+
+  let title = postData.text;
   if (AppBskyFeedDefs.isReasonRepost(reason)) {
-    title = `Repost from ${handle}, post by ${post.author.handle || "unknown"}`;
+    title = `Repost from ${post.author.handle || "unknown"}: ${postData.text}`;
   }
   if (isReplyRef(reply) && isProfileViewBasic(reply.parent.author)) {
     title = `${title}, reply to ${reply.parent.author.handle || "unknown"}`;
